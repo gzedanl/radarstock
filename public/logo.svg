@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 200" width="640" height="200">
+  <defs>
+    <radialGradient id="sweepGradL" cx="80" cy="80" r="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00B489" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#00B489" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="barGradL" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#E8901B"/>
+      <stop offset="100%" stop-color="#F5A623"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="640" height="200" rx="28" fill="#FFFFFF"/>
+
+  <g transform="translate(40,20)">
+    <circle cx="80" cy="80" r="62" fill="none" stroke="#DCE4EA" stroke-width="1.5"/>
+    <circle cx="80" cy="80" r="44" fill="none" stroke="#DCE4EA" stroke-width="1.5"/>
+    <circle cx="80" cy="80" r="26" fill="none" stroke="#CBD6DE" stroke-width="1.5"/>
+
+    <line x1="80" y1="14" x2="80" y2="22" stroke="#9CAEB9" stroke-width="2"/>
+    <line x1="80" y1="138" x2="80" y2="146" stroke="#9CAEB9" stroke-width="2"/>
+    <line x1="14" y1="80" x2="22" y2="80" stroke="#9CAEB9" stroke-width="2"/>
+    <line x1="138" y1="80" x2="146" y2="80" stroke="#9CAEB9" stroke-width="2"/>
+
+    <path d="M80,80 L80,18 A62,62 0 0,1 138,110 Z" fill="url(#sweepGradL)"/>
+    <line x1="80" y1="80" x2="127" y2="42" stroke="#00B489" stroke-width="2" stroke-linecap="round"/>
+
+    <rect x="93" y="82" width="11" height="20" rx="2.5" fill="url(#barGradL)"/>
+    <rect x="108" y="68" width="11" height="34" rx="2.5" fill="url(#barGradL)"/>
+    <rect x="123" y="50" width="11" height="52" rx="2.5" fill="url(#barGradL)"/>
+    <circle cx="128.5" cy="44" r="4.5" fill="#F5A623"/>
+    <circle cx="128.5" cy="44" r="9" fill="#F5A623" opacity="0.2"/>
+
+    <circle cx="80" cy="80" r="3" fill="#00B489"/>
+  </g>
+
+  <g font-family="'Helvetica Neue', Arial, sans-serif" font-weight="700">
+    <text x="222" y="112" font-size="60" letter-spacing="0.5" fill="#0B1220">Radar<tspan fill="#00B489">Stock</tspan></text>
+  </g>
+  <text x="224" y="140" font-family="'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="3.5" fill="#7C8B96">PREDICCION DE INVENTARIO</text>
+</svg>
