@@ -1,5 +1,9 @@
 # Pre-Fase 4 — Qué cerrar antes de seguir avanzando
 
+**Estado: P0, P1 y P2.2/P2.3 implementados (2026-07-08). P2.1
+(multi-ubicación) queda diferido, según su propia recomendación más
+abajo.**
+
 Estado al 2026-07-08. Este documento junta dos fuentes: los pendientes que
 ya habíamos identificado al cerrar la Fase 3 (ver `docs/ARQUITECTURA.md`,
 sección 7) y los gaps que salieron de comparar RadarStock contra Netstock
@@ -17,7 +21,7 @@ Fase 4.
 
 ## P0 — Arreglar antes que nada
 
-### P0.1 — KPIs del dashboard hardcodeados incluso con datos reales
+### ✅ P0.1 — KPIs del dashboard hardcodeados incluso con datos reales
 
 **Problema:** en `app/dashboard/page.tsx`, el array `KPIS` fija
 `"Valor de inventario": "$18.4M CLP"` y `"Precisión de predicción": "91%"`
@@ -42,6 +46,12 @@ mostrada como si fuera real.
 
 **Esfuerzo:** S. **Archivos:** `app/dashboard/page.tsx`.
 
+**Implementado:** con datos reales, los KPIs son "SKUs en riesgo",
+"Unidades en inventario" (suma de `stock_actual`) y "SKUs monitoreados" —
+los tres calculados de verdad. "Precisión de predicción" se sacó (no hay
+ground truth para calcularla todavía). En modo demo se mantienen los
+valores de ejemplo, pero cada card ahora muestra una etiqueta "Demo".
+
 ---
 
 ## P1 — Quick wins de alto impacto
@@ -50,7 +60,7 @@ Estos se apoyan en cálculos que ya existen (`predictPlaceholder.ts`,
 `refreshPredictions.ts`, tabla `predictions`) — no requieren cambios de
 esquema ni nuevas integraciones.
 
-### P1.1 — Umbral de riesgo configurable
+### ✅ P1.1 — Umbral de riesgo configurable
 
 **Problema:** `calcRiesgo()` en `app/dashboard/page.tsx` fija el corte de
 riesgo en 5 y 14 días para todos los productos de todas las empresas. Un
@@ -68,7 +78,14 @@ hay forma de ajustarlo.
 `supabase/migrations/`, `app/dashboard/page.tsx`, nuevo componente de
 configuración.
 
-### P1.2 — Exportar la reposición sugerida
+**Implementado:** `supabase/migrations/0005_risk_thresholds.sql` agrega
+`dias_alerta_alto`/`dias_alerta_medio` a `companies` (default 5/14, no
+rompe nada existente). `app/dashboard/actions.ts` expone la server action
+`updateRiskThresholds`, y `components/RiskThresholdSettings.tsx` es el
+formulario para editarlos desde el dashboard. `calcRiesgo()` ahora recibe
+los umbrales de la empresa en vez de la constante fija.
+
+### ✅ P1.2 — Exportar la reposición sugerida
 
 **Problema:** `predictions.cantidad_sugerida` ya se calcula por SKU (vía ML
 o el placeholder), pero no hay forma de sacar esa información del
@@ -83,7 +100,11 @@ pegarlo en Excel.
 **Esfuerzo:** S. **Archivos:** `components/ProductTable.tsx`, o un endpoint
 nuevo `app/api/products/export`.
 
-### P1.3 — Dashboard "exception-first"
+**Implementado:** botón "Exportar reposición" en `ProductTable.tsx`
+(ahora client component), genera el CSV en el navegador a partir de los
+productos con riesgo alto/medio — sin endpoint nuevo.
+
+### ✅ P1.3 — Dashboard "exception-first"
 
 **Problema:** `ProductTable` lista todos los SKUs sin priorizar. Con 50+
 SKUs cargados, encontrar los 3 que realmente necesitan atención hoy
@@ -97,6 +118,11 @@ ordenar + un resumen.
 
 **Esfuerzo:** S. **Archivos:** `app/dashboard/page.tsx`,
 `components/ProductTable.tsx`.
+
+**Implementado:** `app/dashboard/page.tsx` ordena los productos por
+riesgo (alto → medio → bajo) y luego por `dias_hasta_quiebre` ascendente,
+y muestra un resumen "N SKUs en riesgo alto — revísalos primero" arriba
+de la tabla.
 
 ---
 
@@ -123,7 +149,7 @@ detalle por ubicación se muestra en la tabla.
 dashboard y las predicciones. **Recomendación:** evaluar cuántos usuarios
 reales lo piden antes de invertir aquí; no es bloqueante para Fase 4.
 
-### P2.2 — Lead time de proveedor en el cálculo de riesgo
+### ✅ P2.2 — Lead time de proveedor en el cálculo de riesgo
 
 **Problema:** `dias_hasta_quiebre` (tanto en `predictPlaceholder.ts` como
 lo que devuelva el servicio ML) no descuenta cuánto demora reponer stock.
@@ -140,7 +166,14 @@ para no romper nada), y que el riesgo se calcule sobre
 de los P2 — el cálculo actual puede estar subestimando el riesgo real de
 forma sistemática. Vale la pena priorizarlo por delante de multi-ubicación.
 
-### P2.3 — What-if simple sobre el gráfico
+**Implementado:** `supabase/migrations/0006_product_lead_time.sql` agrega
+`lead_time_dias` a `products` (default 0). `lib/csvProducts.ts` acepta una
+columna opcional `lead_time` / `lead_time_dias` / `tiempo_entrega`. El
+riesgo en `app/dashboard/page.tsx` se calcula sobre
+`dias_hasta_quiebre - lead_time_dias`; la columna de la tabla sigue
+mostrando el día de quiebre real, sin ajustar, para no confundir.
+
+### ✅ P2.3 — What-if simple sobre el gráfico
 
 **Problema:** `PredictionChart` muestra base/optimista/pesimista fijos
 (±15% hardcodeado en `lib/buildChartData.ts`). No hay forma de que el
@@ -153,6 +186,10 @@ ya están en pantalla.
 **Esfuerzo:** S/M. **Archivos:** `components/PredictionChart.tsx`.
 **Recomendación:** bajo costo, pero de menor impacto que P1 — puede ir
 después de Fase 4 sin problema.
+
+**Implementado:** `PredictionChart.tsx` agrega un slider (0.5x–1.5x) que
+escala en el cliente solo los puntos futuros (`real === null`) de
+base/optimista/pesimista — no toca el backend ni el modelo.
 
 ---
 
@@ -183,13 +220,13 @@ Estos siguen pendientes y no se repiten en detalle acá:
 
 ## Secuencia recomendada
 
-1. **P0.1** — arreglar los KPIs falsos (S, y es lo más urgente: afecta
-   confianza del usuario en datos reales).
-2. **P1.1, P1.2, P1.3** — en cualquier orden, son independientes entre sí
-   y todos son S/M.
-3. **P2.2** (lead time) antes que P2.1 (multi-ubicación) — corrige un
-   cálculo que hoy puede estar mal, mientras que multi-ubicación es una
-   feature nueva.
-4. Recién ahí, Fase 4.
-5. P2.1 y P2.3 pueden esperar y evaluarse con feedback de usuarios reales
-   una vez que haya tráfico — no bloquean nada de lo anterior.
+1. ~~**P0.1** — arreglar los KPIs falsos~~ ✅
+2. ~~**P1.1, P1.2, P1.3**~~ ✅
+3. ~~**P2.2** (lead time)~~ ✅ — se adelantó también **P2.3** (what-if),
+   por ser independiente y de bajo costo.
+4. **Pendiente:** correr las migraciones `0005` y `0006` contra la
+   instancia real de Supabase (no aplicadas automáticamente por este
+   cambio de código).
+5. Recién ahí, Fase 4.
+6. **P2.1** (multi-ubicación) queda diferido — evaluar con feedback de
+   usuarios reales una vez que haya tráfico, no bloquea Fase 4.
