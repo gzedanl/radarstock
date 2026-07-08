@@ -1,6 +1,7 @@
 # Pre-Fase 4 — Qué cerrar antes de seguir avanzando
 
-**Estado: P0, P1 y P2.2/P2.3 implementados (2026-07-08). P2.1
+**Estado: P0, P1 y P2.2/P2.3 implementados y con las migraciones
+`0005`/`0006` ya aplicadas en producción (2026-07-08). P2.1
 (multi-ubicación) queda diferido, según su propia recomendación más
 abajo.**
 
@@ -224,9 +225,8 @@ Estos siguen pendientes y no se repiten en detalle acá:
 2. ~~**P1.1, P1.2, P1.3**~~ ✅
 3. ~~**P2.2** (lead time)~~ ✅ — se adelantó también **P2.3** (what-if),
    por ser independiente y de bajo costo.
-4. **Pendiente:** correr las migraciones `0005` y `0006` contra la
-   instancia real de Supabase (no aplicadas automáticamente por este
-   cambio de código).
+4. ~~Correr las migraciones `0005` y `0006` en Supabase~~ ✅ — aplicadas
+   en producción el 2026-07-08.
 5. Recién ahí, Fase 4.
 6. **P2.1** (multi-ubicación) queda diferido — evaluar con feedback de
    usuarios reales una vez que haya tráfico, no bloquea Fase 4.
