@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import RadarHero from "@/components/RadarHero";
 import Logo from "@/components/Logo";
+import CorporatePlanCard from "@/components/CorporatePlanCard";
 import { PLANS, getPriceMercadoPago, type PlanId } from "@/lib/plans";
 
 const PLAN_COPY: Record<PlanId, { features: string[]; highlighted?: boolean }> = {
@@ -372,7 +373,7 @@ export default function Home() {
           <h2 className="font-display text-3xl font-semibold text-text-high">
             Planes
           </h2>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
+          <div className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {Object.values(PLANS).map((plan) => {
               const copy = PLAN_COPY[plan.id];
               return (
@@ -418,6 +419,7 @@ export default function Home() {
                 </div>
               );
             })}
+            <CorporatePlanCard />
           </div>
           <p className="mt-8 text-sm text-text-medium">
             ¿Prefieres que te facturemos directo (transferencia), sin

@@ -5,6 +5,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY ?? "");
 
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL ?? "no-reply@radarstock.cl";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://radarstock.vercel.app";
+const SALES_EMAIL = process.env.SALES_EMAIL ?? "comercial@radarstock.cl";
 
 // El sku viene tal cual del CSV que el usuario sube — sin esto, un sku
 // con HTML/JS se interpolaría sin escapar en el email.
@@ -35,6 +36,7 @@ async function sendEmailSafe(params: {
   to: string;
   subject: string;
   html: string;
+  replyTo?: string;
 }): Promise<void> {
   if (!process.env.SENDGRID_API_KEY) {
     console.error("SENDGRID_API_KEY no configurada, se omite envío de email.");
@@ -45,6 +47,7 @@ async function sendEmailSafe(params: {
     await sgMail.send({
       to: params.to,
       from: FROM_EMAIL,
+      replyTo: params.replyTo,
       subject: params.subject,
       html: params.html,
     });
@@ -180,6 +183,57 @@ export async function sendTrialEndingEmail(
   await sendEmailSafe({
     to,
     subject: `Tu prueba gratuita de RadarStock termina en ${daysLeft} día(s)`,
+    html,
+  });
+}
+
+export interface CorporateLead {
+  empresa: string;
+  email: string;
+  telefono?: string;
+  mensaje?: string;
+}
+
+// Viene de un formulario público sin autenticación (landing y billing) —
+// todos los campos son input de un desconocido y deben escaparse antes
+// de interpolarse en el HTML del email.
+export async function sendCorporateLeadEmail(lead: CorporateLead): Promise<void> {
+  const html = emailShell(
+    "Nuevo lead — Plan Corporate",
+    `
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px;">Empresa</td>
+          <td style="padding: 6px 12px; color: #E5E7EB;">${escapeHtml(lead.empresa)}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px;">Email</td>
+          <td style="padding: 6px 12px; color: #E5E7EB;">${escapeHtml(lead.email)}</td>
+        </tr>
+        ${
+          lead.telefono
+            ? `<tr>
+                <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px;">Teléfono</td>
+                <td style="padding: 6px 12px; color: #E5E7EB;">${escapeHtml(lead.telefono)}</td>
+              </tr>`
+            : ""
+        }
+        ${
+          lead.mensaje
+            ? `<tr>
+                <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px; vertical-align: top;">Mensaje</td>
+                <td style="padding: 6px 12px; color: #E5E7EB; white-space: pre-wrap;">${escapeHtml(lead.mensaje)}</td>
+              </tr>`
+            : ""
+        }
+      </table>
+    `
+  );
+
+  await sendEmailSafe({
+    to: SALES_EMAIL,
+    replyTo: lead.email,
+    subject: `Nuevo lead Corporate: ${lead.empresa}`,
     html,
   });
 }
