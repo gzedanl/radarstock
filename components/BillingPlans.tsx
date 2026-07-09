@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PLANS, getPriceMercadoPago, type PlanId } from "@/lib/plans";
+import CorporatePlanCard from "@/components/CorporatePlanCard";
 
 interface BillingPlansProps {
   currentPlan: string | null;
@@ -104,7 +105,7 @@ export default function BillingPlans({
         </div>
       )}
 
-      <div className="mt-8 grid gap-8 md:grid-cols-3">
+      <div className="mt-8 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         {Object.values(PLANS).map((plan) => {
           const isCurrentPlan = hasActiveSubscription && currentPlan === plan.id;
 
@@ -154,6 +155,7 @@ export default function BillingPlans({
             </div>
           );
         })}
+        <CorporatePlanCard />
       </div>
 
       {hasActiveSubscription && (
