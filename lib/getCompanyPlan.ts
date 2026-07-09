@@ -20,7 +20,7 @@ export interface CompanyPlanInfo {
 const FALLBACK_LIMITS = PLANS.starter;
 
 export async function getCompanyPlan(): Promise<CompanyPlanInfo | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

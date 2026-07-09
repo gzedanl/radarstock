@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { signup } from "../actions";
 
-export default function SignupPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
+export default async function SignupPage(
+  props: {
+    searchParams: Promise<{ error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm rounded-lg border border-border bg-panel-raised p-8">

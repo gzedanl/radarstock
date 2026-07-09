@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { refreshPredictionsForProducts } from "@/lib/refreshPredictions";
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -36,7 +36,7 @@ export async function GET() {
 // llamando al servicio ML, sin necesidad de volver a subir el CSV.
 // Pensado para un botón "actualizar predicciones" o un cron (Fase 4).
 export async function POST() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
