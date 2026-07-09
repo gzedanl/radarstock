@@ -44,9 +44,46 @@ const PLAN_COPY: Record<PlanId, { features: string[]; highlighted?: boolean }> =
   },
 };
 
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "RadarStock",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  description:
+    "RadarStock predice quiebres de stock y sobre-stock para PYMEs chilenas. Sube un CSV de ventas y en minutos tienes tu radar de inventario funcionando, sin necesidad de un ERP.",
+  url: "https://www.radarstock.cl",
+  image: "https://www.radarstock.cl/og-image.png",
+  provider: {
+    "@type": "Organization",
+    name: "RadarStock",
+    url: "https://www.radarstock.cl",
+  },
+  areaServed: {
+    "@type": "Country",
+    name: "Chile",
+  },
+  offers: Object.values(PLANS).map((plan) => ({
+    "@type": "Offer",
+    name: `Plan ${plan.name}`,
+    price: getPriceMercadoPago(plan),
+    priceCurrency: "CLP",
+    url: "https://www.radarstock.cl/#pricing",
+  })),
+};
+
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <>
+      {/* Datos estructurados para buscadores y motores de IA — no
+          contiene ningún dato de usuario, solo el catálogo de planes
+          propio (PLANS), seguro de serializar tal cual. */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
+      <main className="min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 pt-8">
         <Logo className="h-9 w-auto" />
         <nav className="flex items-center gap-6">
@@ -413,6 +450,7 @@ export default function Home() {
           para PYMEs chilenas.
         </div>
       </footer>
-    </main>
+      </main>
+    </>
   );
 }
