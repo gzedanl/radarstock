@@ -92,6 +92,61 @@ export async function sendPlanActivatedEmail(
   });
 }
 
+export interface StockAlertItem {
+  sku: string;
+  diasHastaQuiebre: number | null;
+  cantidadSugerida: number;
+}
+
+// Llamado desde app/api/cron/check-alerts (Fase 4). `alertas` ya viene
+// filtrada solo con los SKUs en riesgo alto de esta empresa.
+export async function sendStockAlertEmail(
+  to: string,
+  alertas: StockAlertItem[]
+): Promise<void> {
+  const filas = alertas
+    .map(
+      (a) => `
+        <tr>
+          <td style="padding: 6px 12px; color: #E5E7EB; font-family: monospace;">${a.sku}</td>
+          <td style="padding: 6px 12px; color: #F5A623;">${a.diasHastaQuiebre ?? "—"} días</td>
+          <td style="padding: 6px 12px; color: #E5E7EB;">${a.cantidadSugerida} unidades</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const html = emailShell(
+    `${alertas.length} SKU${alertas.length === 1 ? "" : "s"} en riesgo de quiebre`,
+    `
+      <p style="color: #E5E7EB; line-height: 1.6;">
+        Estos productos están en riesgo alto según el umbral que configuraste
+        en tu dashboard:
+      </p>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 6px 12px; color: #94A3B8; font-size: 12px;">SKU</th>
+            <th style="text-align: left; padding: 6px 12px; color: #94A3B8; font-size: 12px;">Días hasta quiebre</th>
+            <th style="text-align: left; padding: 6px 12px; color: #94A3B8; font-size: 12px;">Cantidad sugerida</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+      <a href="${APP_URL}/dashboard"
+         style="display: inline-block; margin-top: 20px; background: #00D9A3; color: #0B1220; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+        Ver dashboard
+      </a>
+    `
+  );
+
+  await sendEmailSafe({
+    to,
+    subject: `RadarStock: ${alertas.length} SKU${alertas.length === 1 ? "" : "s"} en riesgo de quiebre`,
+    html,
+  });
+}
+
 // Lista para llamarse desde un cron (Fase 3+). No hay cron todavía.
 export async function sendTrialEndingEmail(
   to: string,

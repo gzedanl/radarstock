@@ -10,6 +10,7 @@ import Logo from "@/components/Logo";
 import { getCompanyPlan } from "@/lib/getCompanyPlan";
 import { createClient } from "@/utils/supabase/server";
 import { buildChartData } from "@/lib/buildChartData";
+import { calcRiesgo, diasHastaQuiebreAjustado } from "@/lib/risk";
 
 interface ProductRow {
   sku: string;
@@ -30,22 +31,6 @@ const RISK_ORDER: Record<RiskLevel, number> = { alto: 0, medio: 1, bajo: 2 };
 function esDeHoy(isoDate: string): boolean {
   const hoy = new Date().toISOString().slice(0, 10);
   return isoDate.slice(0, 10) === hoy;
-}
-
-// Pre-Fase 4 (P2.2): el riesgo se calcula sobre los días hasta el
-// quiebre YA descontado el lead time de reposición, no sobre el día de
-// quiebre físico — un producto con 10 días de stock y 15 días de lead
-// time está en riesgo hoy, aunque "10 días" solo se vea bien a simple
-// vista.
-function calcRiesgo(
-  diasHastaQuiebreAjustado: number | null,
-  diasAlertaAlto: number,
-  diasAlertaMedio: number
-): RiskLevel {
-  if (diasHastaQuiebreAjustado === null) return "bajo";
-  if (diasHastaQuiebreAjustado <= diasAlertaAlto) return "alto";
-  if (diasHastaQuiebreAjustado <= diasAlertaMedio) return "medio";
-  return "bajo";
 }
 
 export default async function DashboardPage() {
@@ -69,10 +54,10 @@ export default async function DashboardPage() {
       products = rows.map((row) => {
         const prediction = row.predictions ?? null;
         const diasHastaQuiebre = prediction?.dias_hasta_quiebre ?? null;
-        const diasAjustado =
-          diasHastaQuiebre !== null
-            ? Math.max(0, diasHastaQuiebre - row.lead_time_dias)
-            : null;
+        const diasAjustado = diasHastaQuiebreAjustado(
+          diasHastaQuiebre,
+          row.lead_time_dias
+        );
         return {
           sku: row.sku,
           stockActual: row.stock_actual,
