@@ -1,5 +1,17 @@
 import Link from "next/link";
-import { Upload, Radar, BellRing, Check, CloudSun, CalendarDays, TrendingUp } from "lucide-react";
+import {
+  Upload,
+  Radar,
+  BellRing,
+  Check,
+  CloudSun,
+  CalendarDays,
+  TrendingUp,
+  SlidersHorizontal,
+  Download,
+  Clock,
+  FlaskConical,
+} from "lucide-react";
 import RadarHero from "@/components/RadarHero";
 import Logo from "@/components/Logo";
 import { PLANS, type PlanId } from "@/lib/plans";
@@ -140,6 +152,72 @@ export default function Home() {
               <p className="text-text-medium">
                 Te avisamos con anticipación qué reponer y cuánto, antes de
                 que sea demasiado tarde.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="font-display text-3xl font-semibold text-text-high">
+            Cada alerta, ajustada a tu forma de reponer
+          </h2>
+          <p className="mt-4 max-w-2xl text-text-medium">
+            Los umbrales de riesgo, la reposición sugerida y las proyecciones
+            se ajustan a tu operación real, no a un promedio genérico igual
+            para todos.
+          </p>
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <SlidersHorizontal size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Umbral de riesgo a tu medida
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Define tú cuándo un SKU pasa a riesgo alto o medio, según
+                cuánto te demora reponer. No todos los negocios compran al
+                mismo ritmo.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <Download size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Reposición lista para tu proveedor
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Exporta un CSV con los SKUs que necesitan pedido, cuánto
+                pedir y en cuántos días se quiebran — listo para enviar, sin
+                copiar filas a mano.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <Clock size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Tu tiempo de entrega, incluido
+              </h3>
+              <p className="mt-2 text-text-medium">
+                El cálculo de riesgo descuenta el lead time real de cada
+                proveedor, para que un SKU con envío lento no te tome por
+                sorpresa.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <FlaskConical size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Simula antes de decidir
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Ajusta el slider del gráfico y prueba cómo cambia tu
+                proyección antes de una promoción o un peak de demanda.
               </p>
             </div>
           </div>
