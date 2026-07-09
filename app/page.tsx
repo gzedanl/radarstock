@@ -118,10 +118,10 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              href="/dashboard"
+              href="/signup"
               className="rounded-md bg-teal px-6 py-3 font-medium text-navy transition hover:opacity-90"
             >
-              Ver demo del dashboard
+              Crear cuenta gratis
             </Link>
             <Link
               href="#pricing"
@@ -407,7 +407,7 @@ export default function Home() {
                     ))}
                   </ul>
                   <Link
-                    href="/dashboard"
+                    href="/signup"
                     className={`mt-8 rounded-md px-6 py-3 text-center font-medium transition ${
                       copy.highlighted
                         ? "bg-teal text-navy hover:opacity-90"
@@ -438,10 +438,10 @@ export default function Home() {
             Prueba RadarStock con tus propios datos en minutos.
           </p>
           <Link
-            href="/dashboard"
+            href="/signup"
             className="mt-8 inline-block rounded-md bg-teal px-8 py-3 font-medium text-navy transition hover:opacity-90"
           >
-            Ver demo del dashboard
+            Crear cuenta gratis
           </Link>
         </div>
       </section>
