@@ -10,6 +10,8 @@ export interface CompanyPlanInfo {
   limits: Plan;
   diasAlertaAlto: number;
   diasAlertaMedio: number;
+  rubro: string | null;
+  comuna: string | null;
 }
 
 // Mientras la empresa está en trial (o tiene un plan no reconocido),
@@ -28,7 +30,7 @@ export async function getCompanyPlan(): Promise<CompanyPlanInfo | null> {
   const { data: company } = await supabase
     .from("companies")
     .select(
-      "id, plan, plan_status, trial_ends_at, dias_alerta_alto, dias_alerta_medio"
+      "id, plan, plan_status, trial_ends_at, dias_alerta_alto, dias_alerta_medio, rubro, comuna"
     )
     .eq("user_id", user.id)
     .single();
@@ -49,5 +51,7 @@ export async function getCompanyPlan(): Promise<CompanyPlanInfo | null> {
     limits: PLANS[company.plan as keyof typeof PLANS] ?? FALLBACK_LIMITS,
     diasAlertaAlto: company.dias_alerta_alto,
     diasAlertaMedio: company.dias_alerta_medio,
+    rubro: company.rubro,
+    comuna: company.comuna,
   };
 }

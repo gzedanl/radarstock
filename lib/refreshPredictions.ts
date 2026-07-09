@@ -10,6 +10,11 @@ interface ProductForPrediction {
   ventas_historicas: { fecha: string; ventas: number }[];
 }
 
+interface CompanyContext {
+  rubro: string | null;
+  comuna: string | null;
+}
+
 // Llama al servicio ML por cada producto y guarda el resultado. Si el
 // servicio ML no responde para un producto que YA tenía una predicción
 // guardada, esa fila se deja intacta (queda "no actualizada hoy" según
@@ -19,7 +24,8 @@ interface ProductForPrediction {
 export async function refreshPredictionsForProducts(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any, any, any>,
-  products: ProductForPrediction[]
+  products: ProductForPrediction[],
+  companyContext?: CompanyContext
 ): Promise<{ updated: number; mlUsedCount: number }> {
   if (products.length === 0) return { updated: 0, mlUsedCount: 0 };
 
@@ -41,6 +47,8 @@ export async function refreshPredictionsForProducts(
         ventas_historicas: product.ventas_historicas.map((v) => v.ventas),
         fechas: product.ventas_historicas.map((v) => v.fecha),
         stock_actual: product.stock_actual,
+        rubro: companyContext?.rubro ?? undefined,
+        comuna: companyContext?.comuna ?? undefined,
       });
 
       if (mlResult) {

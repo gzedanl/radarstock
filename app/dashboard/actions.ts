@@ -37,3 +37,29 @@ export async function updateRiskThresholds(formData: FormData) {
 
   revalidatePath("/dashboard");
 }
+
+// Pre-Fase 4 / Fase 4 (paso 3): rubro y comuna alimentan los ajustes de
+// demanda por clima/feriados y las alertas de insumos que ya existen en
+// el servicio ML (radarstock-ml/services/demand_adjustments.py y
+// market_signals.py) pero que hasta ahora nunca recibían estos datos.
+export async function updateCompanyProfile(formData: FormData) {
+  const rubroRaw = String(formData.get("rubro") ?? "").trim();
+  const comunaRaw = String(formData.get("comuna") ?? "").trim();
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase
+    .from("companies")
+    .update({
+      rubro: rubroRaw || null,
+      comuna: comunaRaw || null,
+    })
+    .eq("user_id", user.id);
+
+  revalidatePath("/dashboard");
+}
