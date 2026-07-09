@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { calcRiesgo, diasHastaQuiebreAjustado } from "@/lib/risk";
 import { sendStockAlertEmail, type StockAlertItem } from "@/lib/email";
+import { verifyCronSecret } from "@/lib/verifyCronSecret";
 
 interface CompanyRow {
   id: string;
@@ -22,11 +23,7 @@ interface CompanyRow {
 // Usa la misma lógica de riesgo que el dashboard (lib/risk.ts) para que
 // las alertas por email nunca contradigan lo que se ve en pantalla.
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (
-    !process.env.CRON_SECRET ||
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!verifyCronSecret(request.headers.get("authorization"))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

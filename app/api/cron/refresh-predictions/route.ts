@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { refreshPredictionsForProducts } from "@/lib/refreshPredictions";
+import { verifyCronSecret } from "@/lib/verifyCronSecret";
 
 // Prophet/LSTM pueden tardar unos segundos por producto — con varias
 // empresas y catálogos grandes esto puede acercarse al límite por
@@ -24,11 +25,7 @@ interface CompanyRow {
 // frescas en vez de la última que haya quedado guardada de un upload
 // de CSV anterior.
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (
-    !process.env.CRON_SECRET ||
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!verifyCronSecret(request.headers.get("authorization"))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

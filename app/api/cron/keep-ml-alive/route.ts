@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyCronSecret } from "@/lib/verifyCronSecret";
 
 // Render duerme el servicio free/starter tras ~15 min sin tráfico, y
 // despertarlo tarda 50+ segundos — más que el timeout de 8s que usa
@@ -12,11 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 // nunca corrió solo). Vercel Cron es más confiable para esto y ya lo
 // usamos para los otros crons de la app.
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (
-    !process.env.CRON_SECRET ||
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!verifyCronSecret(request.headers.get("authorization"))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
