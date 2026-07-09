@@ -6,6 +6,17 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY ?? "");
 const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL ?? "no-reply@radarstock.cl";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://radarstock.vercel.app";
 
+// El sku viene tal cual del CSV que el usuario sube — sin esto, un sku
+// con HTML/JS se interpolaría sin escapar en el email.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function emailShell(title: string, bodyHtml: string): string {
   return `
     <div style="font-family: Arial, sans-serif; background: #0B1220; padding: 32px; color: #E5E7EB;">
@@ -108,7 +119,7 @@ export async function sendStockAlertEmail(
     .map(
       (a) => `
         <tr>
-          <td style="padding: 6px 12px; color: #E5E7EB; font-family: monospace;">${a.sku}</td>
+          <td style="padding: 6px 12px; color: #E5E7EB; font-family: monospace;">${escapeHtml(a.sku)}</td>
           <td style="padding: 6px 12px; color: #F5A623;">${a.diasHastaQuiebre ?? "—"} días</td>
           <td style="padding: 6px 12px; color: #E5E7EB;">${a.cantidadSugerida} unidades</td>
         </tr>
