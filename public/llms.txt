@@ -1,0 +1,34 @@
+# RadarStock
+
+> RadarStock predice quiebres de stock y sobre-stock para PYMEs chilenas.
+> No requiere ERP: la empresa sube un CSV de ventas históricas y en minutos
+> obtiene un dashboard con predicción de demanda, días hasta el quiebre de
+> cada SKU y cantidad sugerida a reponer.
+
+RadarStock está pensado para pequeñas y medianas empresas en Chile que
+gestionan inventario con Excel o de forma manual, sin un sistema ERP.
+El onboarding es 100% self-service: se sube un CSV y las predicciones
+(Prophet, LSTM o Ensemble) están disponibles el mismo día.
+
+## Producto
+
+- Predicción de demanda por SKU (Prophet / LSTM / Ensemble)
+- Detección de riesgo de quiebre de stock, con umbral configurable por
+  días de reposición
+- Ajuste de demanda por clima y feriados chilenos, y alertas de precio
+  de insumos (commodities), según el rubro de la empresa
+- Alertas por email cuando un SKU entra en riesgo alto
+- Exportación de reposición sugerida a CSV
+
+## Planes (CLP/mes, vía Mercado Pago, incluye IVA y comisión)
+
+- Starter: $122.528 — hasta 200 SKUs, 1 usuario
+- Growth: $306.338 — hasta 1.000 SKUs, 5 usuarios, alertas WhatsApp
+- Enterprise: $673.959 — SKUs y usuarios ilimitados, soporte prioritario
+
+## Links
+
+- Sitio: https://www.radarstock.cl
+- Precios: https://www.radarstock.cl/#pricing
+- Iniciar sesión: https://www.radarstock.cl/login
+- Crear cuenta: https://www.radarstock.cl/signup
