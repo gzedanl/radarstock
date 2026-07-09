@@ -303,10 +303,10 @@ Con la Fase 4 cerrada, esto es lo que queda pendiente:
   cancelar, pero cambiar de un plan activo a otro sigue siendo manual
   (cancelar primero, suscribirse después); no hay upgrade/downgrade
   automático con prorrateo.
-- **Domain Authentication en SendGrid** — el sender usa Single Sender
-  Verification, lo que hace que los emails caigan en spam con más
-  frecuencia. Domain Authentication (registros SPF/DKIM en el DNS de
-  `radarstock.cl`) mejora la entregabilidad, pero requiere acceso a la
-  configuración DNS del dominio.
 - **Multi-ubicación** (bodega/sucursal) — sigue diferida a propósito,
   ver `docs/ROADMAP_PRE_FASE_4.md`.
+
+**Ya resuelto:** Domain Authentication en SendGrid — `radarstock.cl`
+quedó verificado (SPF + DKIM vía registros CNAME/TXT en el DNS de
+SiteGround), reemplazando Single Sender Verification. Mejora la
+entregabilidad de los emails transaccionales y de alertas.
