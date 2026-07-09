@@ -1,6 +1,6 @@
 # RadarStock — Documentación del proyecto
 
-Estado al 2026-07-07. Resume qué se ha construido hasta ahora, cómo encajan
+Estado al 2026-07-09. Resume qué se ha construido hasta ahora, cómo encajan
 las piezas y qué falta para las siguientes fases.
 
 ## 1. Qué es RadarStock
@@ -26,8 +26,9 @@ quiebre de cada SKU y cantidad sugerida a reponer.
 | Servicio ML | Backend separado `radarstock-ml/` (FastAPI, fuera de este repo) — Prophet / LSTM / Ensemble |
 
 Este repositorio (`radarstock`) es el frontend + backend-for-frontend en
-Next.js. El servicio de Machine Learning vive en un repo/servicio aparte y
-se consume por HTTP.
+Next.js. El servicio de Machine Learning vive en un repo aparte
+(`radarstock-ml`, FastAPI, desplegado en Render) y se consume por HTTP —
+ver sección 4.1 (Fase 4) para el detalle de qué tiene implementado.
 
 ## 3. Fases construidas
 
@@ -148,6 +149,79 @@ se consume por HTTP.
   predicción mostrada no es de hoy (el servicio ML no respondió y se
   está mostrando la última guardada).
 
+### Fase 4 — Backend ML real, alertas y ciclo de vida de suscripción
+
+A diferencia de las fases anteriores, gran parte de esta fase fue
+**conectar y verificar** trabajo que ya existía en `radarstock-ml`
+(construido en su propio repo, con su propia numeración de fases
+internas — "Fase 3.x" en sus comentarios no corresponde 1:1 a las fases
+de este documento), no construirlo desde cero.
+
+**4.1 — `radarstock-ml`: qué tiene implementado de verdad**
+- Prophet, LSTM (Keras/TensorFlow) y un modelo Ensemble que los combina,
+  con fallback en cascada (Ensemble → Prophet → LSTM → cálculo simple)
+  para nunca dejar caer un request de predicción.
+- Ajuste de demanda por feriados chilenos y clima (Open-Meteo), y
+  alertas de insumos por variación de precio de commodities (Yahoo
+  Finance) — activados por `rubro`/`comuna`.
+- `GET /internal/check-alerts` — endpoint propio de detección de
+  quiebres, con su propio umbral fijo (no se usó para el cron de
+  alertas de RadarStock — ver más abajo).
+- Desplegado en Render (`https://radarstock-ml.onrender.com`).
+
+**4.2 — Verificación de la conexión frontend ↔ ML**
+- `ML_SERVICE_URL` e `INTERNAL_SERVICE_TOKEN` deben coincidir entre
+  Vercel (`radarstock`) y Render (`radarstock-ml`) — se verificó
+  subiendo un CSV real y confirmando `ml_usado > 0` en la respuesta de
+  `/api/products/upload`.
+
+**4.3 — Cold start de Render (keep-alive)**
+- Render duerme el servicio free/starter tras ~15 min sin tráfico y
+  tarda 50+ segundos en despertar — más que el timeout de 8s de
+  `lib/mlService.ts`. Se intentó primero con un workflow de GitHub
+  Actions (`radarstock-ml/.github/workflows/keep-alive.yml`, cron cada
+  10 min) pero el trigger `schedule` de GitHub **nunca disparó solo**
+  en un repo de poco tráfico (confirmado: el dispatch manual sí
+  funciona). Se reemplazó por `app/api/cron/keep-ml-alive` en Vercel
+  Cron, que sí es confiable. El workflow de GitHub Actions se dejó
+  como respaldo de bajo costo, ya no es el mecanismo principal.
+
+**4.4 — `rubro` y `comuna` por empresa**
+- El backend ML soportaba ajustar demanda por clima/feriados y generar
+  alertas de insumos usando `rubro`/`comuna`, pero el frontend nunca los
+  capturaba ni los enviaba — la funcionalidad existía pero estaba
+  muerta del lado de RadarStock.
+- `supabase/migrations/0007_company_rubro_comuna.sql` +
+  `components/CompanyProfileSettings.tsx`: formulario en el dashboard,
+  con un `<select>` de rubro cuyos `value` calzan exacto (sin tildes)
+  con las claves que reconoce `radarstock-ml`.
+
+**4.5 — Alertas de stock por email (cron diario)**
+- `app/api/cron/check-alerts` (en `radarstock`, no en `radarstock-ml`):
+  decisión de diseño — **no** se usa el `/internal/check-alerts` del
+  backend ML porque tiene su propio umbral fijo (3/7 días, sin lead
+  time) que ya no coincide con el umbral configurable por empresa. En
+  su lugar, este cron reutiliza `lib/risk.ts` (extraída de
+  `app/dashboard/page.tsx`) para que el email de alerta clasifique el
+  riesgo exactamente igual que el dashboard.
+- Requiere `CRON_SECRET` (protege el endpoint) y `SENDGRID_API_KEY` /
+  `SENDGRID_FROM_EMAIL` reales — de paso, esto también activó los
+  emails de bienvenida y plan activado, que nunca se habían mandado en
+  producción por falta de esas credenciales.
+
+**4.6 — Recálculo periódico de predicciones**
+- `app/api/cron/refresh-predictions`, corre una hora antes del cron de
+  alertas, para que estas se calculen sobre predicciones frescas.
+  Recorre todas las empresas secuencialmente (no en paralelo, para no
+  saturar el servicio ML).
+
+**4.7 — Gestión de suscripción en `/billing`**
+- Antes solo se podía suscribir, no cancelar. `/billing` pasó a ser un
+  Server Component que muestra el plan activo; `components/BillingPlans.tsx`
+  agrega el botón "Cancelar suscripción"
+  (`app/api/mercadopago/cancel-preapproval`, llama a
+  `preApprovalClient.update({status: "cancelled"})`).
+
 ## 4. Modelo de datos (Supabase / Postgres)
 
 ```
@@ -156,11 +230,14 @@ auth.users (Supabase)
 
 companies
   id, user_id, name, plan, plan_status, mp_preapproval_id,
-  trial_ends_at, created_at
+  trial_ends_at, created_at,
+  dias_alerta_alto, dias_alerta_medio (umbral de riesgo, default 5/14),
+  rubro, comuna (nullable, activan ajustes del servicio ML)
   RLS: solo el dueño (auth.uid() = user_id)
 
 products
   id, company_id, sku, stock_actual, ventas_historicas (jsonb),
+  lead_time_dias (default 0, descontado del cálculo de riesgo),
   created_at — unique(company_id, sku)
   RLS: vía join a companies.user_id
 
@@ -178,11 +255,12 @@ empresa es visible para otra, ni siquiera con la anon key.
 | Variable | Uso |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Cliente Supabase (browser + server, respeta RLS) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Cliente admin, solo server-only, usado por el webhook de MP |
-| `MP_ACCESS_TOKEN` / `MP_WEBHOOK_SECRET` | Mercado Pago: crear preapprovals y verificar firma del webhook |
+| `SUPABASE_SERVICE_ROLE_KEY` | Cliente admin, solo server-only — webhook de MP y los crons de `/api/cron/*` |
+| `MP_ACCESS_TOKEN` / `MP_WEBHOOK_SECRET` | Mercado Pago: crear/cancelar preapprovals y verificar firma del webhook |
 | `NEXT_PUBLIC_APP_URL` | URL pública de la app (back_url de MP, links en emails) |
-| `SENDGRID_API_KEY` / `SENDGRID_FROM_EMAIL` | Envío de emails transaccionales |
+| `SENDGRID_API_KEY` / `SENDGRID_FROM_EMAIL` | Envío de emails transaccionales — `SENDGRID_FROM_EMAIL` debe coincidir exacto con el sender verificado en SendGrid |
 | `ML_SERVICE_URL` / `INTERNAL_SERVICE_TOKEN` | Conexión al backend ML (`radarstock-ml/`), token compartido entre ambos servicios |
+| `CRON_SECRET` | Protege `/api/cron/*` — Vercel lo manda automáticamente como header `Authorization: Bearer` en las invocaciones de cron programadas en `vercel.json`. Solo en Vercel, no se comparte con otro servicio |
 
 ## 6. Decisiones de diseño relevantes
 
@@ -202,20 +280,33 @@ empresa es visible para otra, ni siquiera con la anon key.
 - **Gating de features por plan** centralizado en `lib/plans.ts` +
   `lib/getCompanyPlan.ts`, con fallback a límites Starter para planes no
   reconocidos o en trial.
+- **Una sola fuente de verdad para "qué es riesgo alto"**: `lib/risk.ts`
+  se extrajo de `app/dashboard/page.tsx` para que el cron de alertas por
+  email use exactamente el mismo cálculo (umbral configurable + lead
+  time) que ve el usuario en el dashboard — evita mandar alertas que
+  contradigan lo que se ve en pantalla.
+- **Vercel Cron sobre GitHub Actions para jobs frecuentes**: el trigger
+  `schedule` de GitHub Actions resultó no ser confiable en un repo de
+  poco tráfico (nunca disparó solo, aunque el dispatch manual sí
+  funciona). Los tres crons de la app (`keep-ml-alive`,
+  `refresh-predictions`, `check-alerts`) corren en Vercel Cron.
 
 ## 7. Qué falta (próximas fases)
 
-- Backend ML (`radarstock-ml/`) real con Prophet / LSTM / Ensemble —
-  hoy `lib/mlService.ts` ya está listo para consumirlo, solo falta que el
-  servicio exista y esté desplegado.
-- Señales externas prometidas en la landing (clima, feriados chilenos,
-  precios de commodities) — aún no hay integración, solo está en el copy
-  de marketing.
-- Alertas por WhatsApp (el plan Growth/Enterprise ya lo anuncia en
+Con la Fase 4 cerrada, esto es lo que queda pendiente:
+
+- **Alertas por WhatsApp** (el plan Growth/Enterprise ya lo anuncia en
   `lib/plans.ts`, falta la integración).
-- Cron para `sendTrialEndingEmail` (la función ya existe en `lib/email.ts`
-  pero nada la llama todavía) y para recalcular predicciones
-  periódicamente vía `POST /api/predictions`.
-- Página de gestión de suscripción (cancelar, cambiar de plan) — hoy
-  `/billing` solo permite suscribirse, no gestionar una suscripción
-  existente.
+- **Cron para `sendTrialEndingEmail`** — la función ya existe en
+  `lib/email.ts` pero nada la llama todavía.
+- **Cambio de plan sin duplicar cobro** — `/billing` ya permite
+  cancelar, pero cambiar de un plan activo a otro sigue siendo manual
+  (cancelar primero, suscribirse después); no hay upgrade/downgrade
+  automático con prorrateo.
+- **Domain Authentication en SendGrid** — el sender usa Single Sender
+  Verification, lo que hace que los emails caigan en spam con más
+  frecuencia. Domain Authentication (registros SPF/DKIM en el DNS de
+  `radarstock.cl`) mejora la entregabilidad, pero requiere acceso a la
+  configuración DNS del dominio.
+- **Multi-ubicación** (bodega/sucursal) — sigue diferida a propósito,
+  ver `docs/ROADMAP_PRE_FASE_4.md`.
