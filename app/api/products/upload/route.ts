@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id, plan")
+    .select("id, plan, rubro, comuna")
     .eq("user_id", user.id)
     .single();
 
@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
   // — los que ya tenían una quedan intactos (ver refreshPredictions.ts).
   const { mlUsedCount } = await refreshPredictionsForProducts(
     supabase,
-    upsertedProducts ?? []
+    upsertedProducts ?? [],
+    { rubro: company.rubro, comuna: company.comuna }
   );
 
   return NextResponse.json({

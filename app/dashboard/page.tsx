@@ -5,6 +5,7 @@ import CSVUploader from "@/components/CSVUploader";
 import LogoutButton from "@/components/LogoutButton";
 import PlanBanner from "@/components/PlanBanner";
 import RiskThresholdSettings from "@/components/RiskThresholdSettings";
+import CompanyProfileSettings from "@/components/CompanyProfileSettings";
 import Logo from "@/components/Logo";
 import { getCompanyPlan } from "@/lib/getCompanyPlan";
 import { createClient } from "@/utils/supabase/server";
@@ -239,10 +240,14 @@ export default async function DashboardPage() {
         </div>
 
         {companyPlan && (
-          <div className="mt-8">
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
             <RiskThresholdSettings
               diasAlertaAlto={companyPlan.diasAlertaAlto}
               diasAlertaMedio={companyPlan.diasAlertaMedio}
+            />
+            <CompanyProfileSettings
+              rubro={companyPlan.rubro}
+              comuna={companyPlan.comuna}
             />
           </div>
         )}

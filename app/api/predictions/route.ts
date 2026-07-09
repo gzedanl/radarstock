@@ -47,7 +47,7 @@ export async function POST() {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id")
+    .select("id, rubro, comuna")
     .eq("user_id", user.id)
     .single();
 
@@ -62,7 +62,8 @@ export async function POST() {
 
   const { updated, mlUsedCount } = await refreshPredictionsForProducts(
     supabase,
-    products ?? []
+    products ?? [],
+    { rubro: company.rubro, comuna: company.comuna }
   );
 
   return NextResponse.json({
