@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { preApprovalClient } from "@/lib/mercadopago";
-import { getPlan } from "@/lib/plans";
+import { getPlan, getPriceMercadoPago } from "@/lib/plans";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -54,9 +54,12 @@ export async function POST(request: NextRequest) {
           frequency_type: "months",
           // La cuenta collector opera en CLP; Mercado Pago rechaza
           // cobros recurrentes en USD para cuentas chilenas.
-          // plan.priceClp ya incluye IVA — es el precio final mostrado
-          // al cliente. La comisión de Mercado Pago es un costo interno.
-          transaction_amount: plan.priceClp,
+          // getPriceMercadoPago() ya incluye IVA + la comisión de
+          // Mercado Pago (2,5% + IVA sobre la comisión) — se traspasa
+          // al cliente porque paga con tarjeta vía suscripción
+          // automática. Quien prefiera transferencia paga el precio
+          // sin esa comisión (ver getPriceConIva()).
+          transaction_amount: getPriceMercadoPago(plan),
           currency_id: "CLP",
         },
       },

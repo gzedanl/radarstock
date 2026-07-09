@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS, getPriceMercadoPago, type PlanId } from "@/lib/plans";
 
 interface BillingPlansProps {
   currentPlan: string | null;
@@ -117,10 +117,12 @@ export default function BillingPlans({
                 {plan.name}
               </h3>
               <p className="mt-4 font-mono text-3xl text-text-high">
-                ${plan.priceClp.toLocaleString("es-CL")}
+                ${getPriceMercadoPago(plan).toLocaleString("es-CL")}
                 <span className="text-base text-text-medium"> CLP/mes</span>
               </p>
-              <p className="mt-1 text-xs text-text-medium">IVA incluido</p>
+              <p className="mt-1 text-xs text-text-medium">
+                IVA y comisión de Mercado Pago incluidos
+              </p>
               <ul className="mt-6 flex flex-1 flex-col gap-2 text-sm text-text-medium">
                 <li>
                   {plan.maxSkus === Infinity
