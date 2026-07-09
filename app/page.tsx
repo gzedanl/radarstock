@@ -47,8 +47,22 @@ const PLAN_COPY: Record<PlanId, { features: string[]; highlighted?: boolean }> =
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center px-6 pt-8">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 pt-8">
         <Logo className="h-9 w-auto" />
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-text-medium transition hover:text-text-high"
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-navy transition hover:opacity-90"
+          >
+            Crear cuenta
+          </Link>
+        </nav>
       </header>
 
       <section className="mx-auto flex max-w-6xl flex-col items-center gap-12 px-6 pb-24 pt-12 md:flex-row">
