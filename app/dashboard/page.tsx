@@ -40,7 +40,7 @@ export default async function DashboardPage() {
   let chartData: ReturnType<typeof buildChartData> = [];
 
   if (companyPlan) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: rows } = await supabase
       .from("products")
       .select(

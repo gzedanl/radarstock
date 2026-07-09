@@ -20,7 +20,7 @@ export async function updateRiskThresholds(formData: FormData) {
     return;
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -46,7 +46,7 @@ export async function updateCompanyProfile(formData: FormData) {
   const rubroRaw = String(formData.get("rubro") ?? "").trim();
   const comunaRaw = String(formData.get("comuna") ?? "").trim();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
