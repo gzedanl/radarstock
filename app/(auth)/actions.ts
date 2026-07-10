@@ -7,6 +7,15 @@ import { sendWelcomeEmail } from "@/lib/email";
 export async function signup(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const aceptaTerminos = formData.get("aceptaTerminos") === "on";
+
+  if (!aceptaTerminos) {
+    redirect(
+      `/signup?error=${encodeURIComponent(
+        "Debes aceptar los Términos de Servicio y la Política de Privacidad."
+      )}`
+    );
+  }
 
   const supabase = await createClient();
 

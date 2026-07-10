@@ -471,9 +471,19 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-border py-10">
-        <div className="mx-auto max-w-6xl px-6 text-sm text-text-medium">
-          © {new Date().getFullYear()} RadarStock. Predicción de inventario
-          para PYMEs chilenas.
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 text-sm text-text-medium sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} RadarStock. Predicción de inventario
+            para PYMEs chilenas.
+          </p>
+          <nav className="flex gap-6">
+            <Link href="/privacidad" className="transition hover:text-text-high">
+              Privacidad
+            </Link>
+            <Link href="/terminos" className="transition hover:text-text-high">
+              Términos
+            </Link>
+          </nav>
         </div>
       </footer>
       </main>

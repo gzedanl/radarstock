@@ -32,3 +32,5 @@ El onboarding es 100% self-service: se sube un CSV y las predicciones
 - Precios: https://www.radarstock.cl/#pricing
 - Iniciar sesión: https://www.radarstock.cl/login
 - Crear cuenta: https://www.radarstock.cl/signup
+- Política de Privacidad: https://www.radarstock.cl/privacidad
+- Términos de Servicio: https://www.radarstock.cl/terminos
