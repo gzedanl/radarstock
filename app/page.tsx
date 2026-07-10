@@ -86,18 +86,18 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       <main className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 pt-8">
-        <Logo className="h-9 w-auto" />
-        <nav className="flex items-center gap-6">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-6 sm:px-6 sm:pt-8">
+        <Logo className="h-7 w-auto sm:h-9" />
+        <nav className="flex items-center gap-2 sm:gap-6">
           <Link
             href="/login"
-            className="text-sm font-medium text-text-medium transition hover:text-text-high"
+            className="text-xs font-medium text-text-medium transition hover:text-text-high sm:text-sm"
           >
             Iniciar sesión
           </Link>
           <Link
             href="/signup"
-            className="rounded-md bg-teal px-4 py-2 text-sm font-medium text-navy transition hover:opacity-90"
+            className="rounded-md bg-teal px-3 py-1.5 text-xs font-medium text-navy transition hover:opacity-90 sm:px-4 sm:py-2 sm:text-sm"
           >
             Crear cuenta
           </Link>
