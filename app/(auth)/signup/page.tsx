@@ -44,6 +44,25 @@ export default async function SignupPage(
             />
           </div>
 
+          <label className="flex items-start gap-2 text-sm text-text-medium">
+            <input
+              type="checkbox"
+              name="aceptaTerminos"
+              required
+              className="mt-1 accent-teal"
+            />
+            <span>
+              Acepto los{" "}
+              <Link href="/terminos" className="text-teal hover:underline">
+                Términos de Servicio
+              </Link>{" "}
+              y la{" "}
+              <Link href="/privacidad" className="text-teal hover:underline">
+                Política de Privacidad
+              </Link>
+            </span>
+          </label>
+
           {searchParams.error && (
             <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-sm text-amber">
               {searchParams.error}

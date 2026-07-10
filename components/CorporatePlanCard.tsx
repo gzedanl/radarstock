@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 
 export default function CorporatePlanCard() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +19,11 @@ export default function CorporatePlanCard() {
     // Honeypot: campo oculto vía CSS, invisible para personas.
     if ((formData.get("website") as string)?.trim()) {
       setIsSent(true);
+      return;
+    }
+
+    if (formData.get("aceptaPrivacidad") !== "on") {
+      setError("Debes aceptar la Política de Privacidad para continuar.");
       return;
     }
 
@@ -108,6 +114,20 @@ export default function CorporatePlanCard() {
             placeholder="Cuéntanos qué necesitas (opcional)"
             className="rounded-md border border-border bg-navy px-3 py-2 text-sm text-text-high placeholder:text-text-medium focus:border-teal focus:outline-none"
           />
+          <label className="flex items-start gap-2 text-xs text-text-medium">
+            <input
+              type="checkbox"
+              name="aceptaPrivacidad"
+              required
+              className="mt-0.5 accent-teal"
+            />
+            <span>
+              Acepto la{" "}
+              <Link href="/privacidad" className="text-teal hover:underline">
+                Política de Privacidad
+              </Link>
+            </span>
+          </label>
           <button
             type="submit"
             disabled={isSubmitting}
