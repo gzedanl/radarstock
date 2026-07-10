@@ -12,6 +12,7 @@ import {
   Clock,
   FlaskConical,
 } from "lucide-react";
+import Image from "next/image";
 import RadarHero from "@/components/RadarHero";
 import Logo from "@/components/Logo";
 import CorporatePlanCard from "@/components/CorporatePlanCard";
@@ -133,6 +134,29 @@ export default function Home() {
         </div>
         <div className="flex-1">
           <RadarHero />
+        </div>
+      </section>
+
+      <section className="px-6 pb-24">
+        <div className="mx-auto max-w-5xl">
+          <div className="overflow-hidden rounded-xl border border-border bg-panel shadow-2xl">
+            <div className="flex items-center gap-1.5 border-b border-border bg-panel-raised px-4 py-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber/60" />
+              <span className="h-2.5 w-2.5 rounded-full bg-teal/60" />
+              <span className="h-2.5 w-2.5 rounded-full bg-text-medium/40" />
+              <span className="ml-3 font-mono text-xs text-text-medium">
+                radarstock.cl/dashboard
+              </span>
+            </div>
+            <Image
+              src="/dashboard-preview.png"
+              alt="Dashboard de RadarStock con KPIs de inventario, predicción de ventas vs. demanda y tabla de productos por nivel de riesgo"
+              width={1440}
+              height={920}
+              className="w-full"
+              priority
+            />
+          </div>
         </div>
       </section>
 
