@@ -24,18 +24,25 @@ interface CompanyContext {
 }
 
 // Llama al servicio ML por cada producto y guarda el resultado. Si el
-// servicio ML no responde para un producto que YA tenía una predicción
-// guardada, esa fila se deja intacta (queda "no actualizada hoy" según
+// servicio ML no respondió síncrono para un producto que YA tenía una
+// predicción guardada —sea porque no está disponible, o porque encoló
+// el job para procesarlo de forma asíncrona (ver lib/mlService.ts)—,
+// esa fila se deja intacta (queda "no actualizada hoy" según
 // generated_at) en vez de sobreescribirla con un cálculo falso-fresco.
+// Cuando el job encolado termine, el worker de radarstock-ml escribe el
+// resultado directo en Supabase y la próxima carga del dashboard ya lo
+// ve — no hace falta que este endpoint espere nada.
 // Solo los productos sin predicción previa reciben el cálculo
-// placeholder como fallback, para no dejarlos sin nada.
+// placeholder como fallback, para no dejarlos sin nada mientras tanto.
 export async function refreshPredictionsForProducts(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: SupabaseClient<any, any, any>,
   products: ProductForPrediction[],
   companyContext?: CompanyContext
-): Promise<{ updated: number; mlUsedCount: number }> {
-  if (products.length === 0) return { updated: 0, mlUsedCount: 0 };
+): Promise<{ updated: number; mlUsedCount: number; mlEncoladoCount: number }> {
+  if (products.length === 0) {
+    return { updated: 0, mlUsedCount: 0, mlEncoladoCount: 0 };
+  }
 
   const productIds = products.map((p) => p.id);
   const { data: existingPredictions } = await supabase
@@ -47,12 +54,14 @@ export async function refreshPredictionsForProducts(
   );
 
   let mlUsedCount = 0;
+  let mlEncoladoCount = 0;
 
   const results = await mapWithConcurrency(
     products,
     ML_PREDICT_CONCURRENCY,
     async (product) => {
       const mlResult = await callMlPredict({
+        product_id: product.id,
         sku: product.sku,
         ventas_historicas: product.ventas_historicas.map((v) => v.ventas),
         fechas: product.ventas_historicas.map((v) => v.fecha),
@@ -61,15 +70,19 @@ export async function refreshPredictionsForProducts(
         comuna: companyContext?.comuna ?? undefined,
       });
 
-      if (mlResult) {
+      if (mlResult.type === "sync") {
         mlUsedCount += 1;
         return {
           product_id: product.id,
-          dias_hasta_quiebre: mlResult.dias_hasta_quiebre,
-          cantidad_sugerida: mlResult.cantidad_sugerida,
+          dias_hasta_quiebre: mlResult.data.dias_hasta_quiebre,
+          cantidad_sugerida: mlResult.data.cantidad_sugerida,
           escenario: "base",
           generated_at: new Date().toISOString(),
         };
+      }
+
+      if (mlResult.type === "queued") {
+        mlEncoladoCount += 1;
       }
 
       if (!existingSet.has(product.id)) {
@@ -100,5 +113,5 @@ export async function refreshPredictionsForProducts(
       .upsert(predictionRows, { onConflict: "product_id" });
   }
 
-  return { updated: predictionRows.length, mlUsedCount };
+  return { updated: predictionRows.length, mlUsedCount, mlEncoladoCount };
 }

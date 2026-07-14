@@ -47,21 +47,27 @@ export async function GET(request: NextRequest) {
   let empresasProcesadas = 0;
   let productosActualizados = 0;
   let mlUsadoTotal = 0;
+  let mlEncoladoTotal = 0;
 
   // Secuencial a propósito: no queremos golpear el servicio ML (free
   // tier de Render) con las llamadas de todas las empresas en paralelo.
+  // Con la cola de predicciones configurada (REDIS_URL en
+  // radarstock-ml) esto pesa menos de lo que pesaba antes — /predict ya
+  // no bloquea entrenando, solo encola — pero se mantiene igual de
+  // conservador por las dudas.
   for (const company of companies ?? []) {
     if (!company.products || company.products.length === 0) continue;
 
-    const { updated, mlUsedCount } = await refreshPredictionsForProducts(
-      supabaseAdmin,
-      company.products,
-      { rubro: company.rubro, comuna: company.comuna }
-    );
+    const { updated, mlUsedCount, mlEncoladoCount } =
+      await refreshPredictionsForProducts(supabaseAdmin, company.products, {
+        rubro: company.rubro,
+        comuna: company.comuna,
+      });
 
     empresasProcesadas += 1;
     productosActualizados += updated;
     mlUsadoTotal += mlUsedCount;
+    mlEncoladoTotal += mlEncoladoCount;
   }
 
   return NextResponse.json({
@@ -69,5 +75,6 @@ export async function GET(request: NextRequest) {
     empresas_procesadas: empresasProcesadas,
     productos_actualizados: productosActualizados,
     ml_usado: mlUsadoTotal,
+    ml_encolado: mlEncoladoTotal,
   });
 }
