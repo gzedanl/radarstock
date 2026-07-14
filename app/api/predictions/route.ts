@@ -64,16 +64,17 @@ export async function POST() {
     .select("id, sku, stock_actual, ventas_historicas")
     .eq("company_id", company.id);
 
-  const { updated, mlUsedCount } = await refreshPredictionsForProducts(
-    supabase,
-    products ?? [],
-    { rubro: company.rubro, comuna: company.comuna }
-  );
+  const { updated, mlUsedCount, mlEncoladoCount } =
+    await refreshPredictionsForProducts(supabase, products ?? [], {
+      rubro: company.rubro,
+      comuna: company.comuna,
+    });
 
   return NextResponse.json({
     status: "ok",
     productos: products?.length ?? 0,
     actualizados: updated,
     ml_usado: mlUsedCount,
+    ml_encolado: mlEncoladoCount,
   });
 }

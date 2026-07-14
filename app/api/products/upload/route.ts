@@ -74,10 +74,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Llama al servicio ML real por cada producto. Si no responde, cae al
-  // cálculo placeholder solo para productos nuevos sin predicción previa
-  // — los que ya tenían una quedan intactos (ver refreshPredictions.ts).
-  const { mlUsedCount } = await refreshPredictionsForProducts(
+  // Llama al servicio ML real por cada producto. Si respondió síncrono,
+  // ya queda guardado; si encoló el job (cola configurada en
+  // radarstock-ml), un worker lo termina aparte y lo escribe directo en
+  // Supabase — esta respuesta no espera eso. Si no está disponible,
+  // cae al cálculo placeholder solo para productos nuevos sin
+  // predicción previa (ver refreshPredictions.ts).
+  const { mlUsedCount, mlEncoladoCount } = await refreshPredictionsForProducts(
     supabase,
     upsertedProducts ?? [],
     { rubro: company.rubro, comuna: company.comuna }
@@ -90,5 +93,6 @@ export async function POST(request: NextRequest) {
     truncated,
     limit: maxSkus,
     ml_usado: mlUsedCount,
+    ml_encolado: mlEncoladoCount,
   });
 }
