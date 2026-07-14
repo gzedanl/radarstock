@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { callMlPredict } from "@/lib/mlService";
 import { computePlaceholderPrediction } from "@/lib/predictPlaceholder";
+import { mapWithConcurrency } from "@/lib/mapWithConcurrency";
 
 interface ProductForPrediction {
   id: string;
@@ -9,6 +10,13 @@ interface ProductForPrediction {
   stock_actual: number;
   ventas_historicas: { fecha: string; ventas: number }[];
 }
+
+// radarstock-ml corre un solo proceso uvicorn (CPU-bound: entrena
+// Prophet/LSTM por request). Disparar todos los productos de un
+// catálogo grande a la vez con Promise.all satura ese único proceso y
+// hace que la mayoría de las llamadas expiren el timeout de
+// callMlPredict — mejor pedir de a poco.
+const ML_PREDICT_CONCURRENCY = 5;
 
 interface CompanyContext {
   rubro: string | null;
@@ -40,8 +48,10 @@ export async function refreshPredictionsForProducts(
 
   let mlUsedCount = 0;
 
-  const results = await Promise.all(
-    products.map(async (product) => {
+  const results = await mapWithConcurrency(
+    products,
+    ML_PREDICT_CONCURRENCY,
+    async (product) => {
       const mlResult = await callMlPredict({
         sku: product.sku,
         ventas_historicas: product.ventas_historicas.map((v) => v.ventas),
@@ -77,7 +87,7 @@ export async function refreshPredictionsForProducts(
       }
 
       return null;
-    })
+    }
   );
 
   const predictionRows = results.filter(

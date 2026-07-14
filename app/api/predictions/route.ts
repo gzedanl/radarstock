@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { refreshPredictionsForProducts } from "@/lib/refreshPredictions";
 
+// El POST de abajo recalcula todo el catálogo de la empresa — mismo
+// motivo que app/api/products/upload/route.ts.
+export const maxDuration = 300;
+
 export async function GET() {
   const supabase = await createClient();
   const {

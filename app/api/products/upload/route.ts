@@ -4,6 +4,11 @@ import { parseProductRows } from "@/lib/csvProducts";
 import { PLANS } from "@/lib/plans";
 import { refreshPredictionsForProducts } from "@/lib/refreshPredictions";
 
+// Con un catálogo grande, esperar el recálculo de predicciones (Prophet
+// + LSTM por SKU, aunque limitado en concurrencia — ver
+// lib/mapWithConcurrency.ts) puede acercarse al default de Vercel.
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
 
