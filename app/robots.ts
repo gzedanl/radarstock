@@ -10,8 +10,10 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         // Páginas detrás de auth y endpoints internos — sin valor de
         // indexar, y /api/* nunca debería aparecer en resultados de
-        // búsqueda.
-        disallow: ["/dashboard", "/billing", "/api/"],
+        // búsqueda. /propuesta* son presentaciones comerciales para
+        // mandar por link directo a prospectos — no deben indexarse ni
+        // aparecer en el sitio, aunque son públicas (no requieren login).
+        disallow: ["/dashboard", "/billing", "/api/", "/propuesta"],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
