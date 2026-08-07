@@ -1,4 +1,5 @@
 export type PlanId = "starter" | "growth" | "enterprise";
+export type AddonId = "whatsapp-agent" | "extra-user";
 
 export interface Plan {
   id: PlanId;
@@ -11,7 +12,16 @@ export interface Plan {
   priceNetoClp: number;
   maxSkus: number;
   maxUsers: number;
-  whatsappAlerts: boolean;
+}
+
+export interface Addon {
+  id: AddonId;
+  name: string;
+  description: string;
+  priceNetoClp: number;
+  // true si el precio es por unidad (ej. por usuario extra) en vez de
+  // un cargo fijo mensual por cuenta.
+  perUnit?: boolean;
 }
 
 const IVA_RATE = 0.19;
@@ -29,7 +39,6 @@ export const PLANS: Record<PlanId, Plan> = {
     priceNetoClp: 99990,
     maxSkus: 200,
     maxUsers: 1,
-    whatsappAlerts: false,
   },
   growth: {
     id: "growth",
@@ -37,7 +46,6 @@ export const PLANS: Record<PlanId, Plan> = {
     priceNetoClp: 249990,
     maxSkus: 1000,
     maxUsers: 5,
-    whatsappAlerts: true,
   },
   enterprise: {
     id: "enterprise",
@@ -45,7 +53,27 @@ export const PLANS: Record<PlanId, Plan> = {
     priceNetoClp: 549990,
     maxSkus: Infinity,
     maxUsers: Infinity,
-    whatsappAlerts: true,
+  },
+};
+
+// Complementos pagados, disponibles sobre cualquier plan (Starter,
+// Growth o Enterprise). No reemplazan ninguna función del plan base,
+// se suman a la suscripción existente.
+export const ADDONS: Record<"whatsappAgent" | "extraUser", Addon> = {
+  whatsappAgent: {
+    id: "whatsapp-agent",
+    name: "Agente IA por WhatsApp",
+    description:
+      "Consulta el riesgo de tus SKUs y pide que te redacte la orden de compra para tu proveedor, todo por WhatsApp.",
+    priceNetoClp: 19990,
+  },
+  extraUser: {
+    id: "extra-user",
+    name: "Usuario extra",
+    description:
+      "Suma un usuario adicional a tu cuenta, más allá del límite incluido en tu plan.",
+    priceNetoClp: 9990,
+    perUnit: true,
   },
 };
 
@@ -55,16 +83,17 @@ export function getPlan(planId: string): Plan | undefined {
 
 // Precio con IVA, sin comisión de Mercado Pago — es lo que se cobra si
 // el cliente paga por transferencia directa en vez de suscripción
-// automática.
-export function getPriceConIva(plan: Plan): number {
-  return Math.round(plan.priceNetoClp * (1 + IVA_RATE));
+// automática. Acepta cualquier plan o add-on, ambos tienen
+// priceNetoClp.
+export function getPriceConIva(item: { priceNetoClp: number }): number {
+  return Math.round(item.priceNetoClp * (1 + IVA_RATE));
 }
 
 // Precio final cobrado vía Mercado Pago: precio con IVA + comisión de
 // Mercado Pago (2,5% + IVA sobre la comisión), calculada sobre el
 // monto de la transacción.
-export function getPriceMercadoPago(plan: Plan): number {
-  const precioConIva = getPriceConIva(plan);
+export function getPriceMercadoPago(item: { priceNetoClp: number }): number {
+  const precioConIva = getPriceConIva(item);
   const comision = precioConIva * MP_FEE_RATE * (1 + IVA_RATE);
   return Math.round(precioConIva + comision);
 }
