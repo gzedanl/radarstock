@@ -24,7 +24,7 @@ const PLAN_FEATURES: Record<PlanId, string[]> = {
     "Hasta 1.000 SKUs monitoreados",
     "5 usuarios",
     "Predicción Ensemble (Prophet + LSTM)",
-    "Alertas por email y WhatsApp",
+    "Alertas por email",
   ],
   enterprise: [
     "SKUs ilimitados",

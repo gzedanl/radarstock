@@ -16,6 +16,7 @@ import RadarHero from "@/components/RadarHero";
 import Logo from "@/components/Logo";
 import CorporatePlanCard from "@/components/CorporatePlanCard";
 import DashboardProof from "@/components/DashboardProof";
+import AddonsSection from "@/components/AddonsSection";
 import { PLANS, getPriceMercadoPago, type PlanId } from "@/lib/plans";
 
 const PLAN_COPY: Record<PlanId, { features: string[]; highlighted?: boolean }> = {
@@ -32,7 +33,7 @@ const PLAN_COPY: Record<PlanId, { features: string[]; highlighted?: boolean }> =
       "Hasta 1.000 SKUs monitoreados",
       "5 usuarios",
       "Predicción Ensemble (Prophet + LSTM)",
-      "Alertas por email y WhatsApp",
+      "Alertas por email",
     ],
     highlighted: true,
   },
@@ -433,6 +434,7 @@ export default function Home() {
             suscripción automática? Escríbenos — en ese caso solo se cobra la
             membresía + IVA, sin la comisión de tarjeta bancaria.
           </p>
+          <AddonsSection />
         </div>
       </section>
 

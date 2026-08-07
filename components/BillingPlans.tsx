@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PLANS, getPriceMercadoPago, type PlanId } from "@/lib/plans";
 import CorporatePlanCard from "@/components/CorporatePlanCard";
+import AddonsSection from "@/components/AddonsSection";
 
 interface BillingPlansProps {
   currentPlan: string | null;
@@ -135,11 +136,7 @@ export default function BillingPlans({
                     ? "Usuarios ilimitados"
                     : `${plan.maxUsers} usuario(s)`}
                 </li>
-                <li>
-                  {plan.whatsappAlerts
-                    ? "Alertas por email y WhatsApp"
-                    : "Alertas por email"}
-                </li>
+                <li>Alertas por email</li>
               </ul>
               <button
                 onClick={() => handleSubscribe(plan.id)}
@@ -165,6 +162,8 @@ export default function BillingPlans({
           actual si quieres cambiarte a otro.
         </p>
       )}
+
+      <AddonsSection />
     </>
   );
 }
