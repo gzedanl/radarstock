@@ -22,6 +22,11 @@ export interface Addon {
   // true si el precio es por unidad (ej. por usuario extra) en vez de
   // un cargo fijo mensual por cuenta.
   perUnit?: boolean;
+  // Para add-ons con cuota de uso (ej. agente WhatsApp): cuántas
+  // unidades incluye el precio base antes de necesitar un paquete extra.
+  includedUnits?: number;
+  // Paquete de unidades adicionales una vez superada la cuota incluida.
+  overagePack?: { units: number; priceNetoClp: number };
 }
 
 const IVA_RATE = 0.19;
@@ -64,8 +69,10 @@ export const ADDONS: Record<"whatsappAgent" | "extraUser", Addon> = {
     id: "whatsapp-agent",
     name: "Agente IA por WhatsApp",
     description:
-      "Consulta el riesgo de tus SKUs y pide que te redacte la orden de compra para tu proveedor, todo por WhatsApp.",
+      "Consulta el riesgo de tus SKUs y pide que te redacte la orden de compra para tu proveedor, todo por WhatsApp. Incluye 200 mensajes al mes.",
     priceNetoClp: 19990,
+    includedUnits: 200,
+    overagePack: { units: 100, priceNetoClp: 4990 },
   },
   extraUser: {
     id: "extra-user",

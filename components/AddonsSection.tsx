@@ -32,6 +32,16 @@ export default function AddonsSection() {
             <p className="mt-3 flex-1 text-sm text-text-medium">
               {addon.description}
             </p>
+            {addon.overagePack && (
+              <p className="mt-2 text-xs text-text-medium">
+                ¿Superas la cuota? Paquete de {addon.overagePack.units}{" "}
+                mensajes extra por $
+                {getPriceMercadoPago(addon.overagePack).toLocaleString(
+                  "es-CL"
+                )}{" "}
+                CLP.
+              </p>
+            )}
             <a
               href={`mailto:comercial@radarstock.cl?subject=${encodeURIComponent(
                 `Quiero agregar "${addon.name}" a mi plan`
