@@ -6,6 +6,7 @@ import LogoutButton from "@/components/LogoutButton";
 import PlanBanner from "@/components/PlanBanner";
 import RiskThresholdSettings from "@/components/RiskThresholdSettings";
 import CompanyProfileSettings from "@/components/CompanyProfileSettings";
+import SiiSyncPanel from "@/components/SiiSyncPanel";
 import Logo from "@/components/Logo";
 import { getCompanyPlan } from "@/lib/getCompanyPlan";
 import { createClient } from "@/utils/supabase/server";
@@ -38,6 +39,14 @@ export default async function DashboardPage() {
 
   let products: Product[] = [];
   let chartData: ReturnType<typeof buildChartData> = [];
+  let ultimaSincronizacionSii: {
+    periodo: string;
+    estado: string;
+    comprasSincronizadas: number;
+    ventasSincronizadas: number;
+    creadoEn: string;
+  } | null = null;
+  let totalDocumentosSii = 0;
 
   if (companyPlan) {
     const supabase = await createClient();
@@ -49,6 +58,32 @@ export default async function DashboardPage() {
       .eq("company_id", companyPlan.companyId)
       .order("sku")
       .returns<ProductRow[]>();
+
+    const { data: ultimaSync } = await supabase
+      .from("sii_sincronizaciones")
+      .select(
+        "periodo, estado, compras_sincronizadas, ventas_sincronizadas, created_at"
+      )
+      .eq("company_id", companyPlan.companyId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (ultimaSync) {
+      ultimaSincronizacionSii = {
+        periodo: ultimaSync.periodo,
+        estado: ultimaSync.estado,
+        comprasSincronizadas: ultimaSync.compras_sincronizadas,
+        ventasSincronizadas: ultimaSync.ventas_sincronizadas,
+        creadoEn: ultimaSync.created_at,
+      };
+    }
+
+    const { count } = await supabase
+      .from("sii_documentos")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", companyPlan.companyId);
+    totalDocumentosSii = count ?? 0;
 
     if (rows && rows.length > 0) {
       products = rows.map((row) => {
@@ -233,6 +268,15 @@ export default async function DashboardPage() {
             <CompanyProfileSettings
               rubro={companyPlan.rubro}
               comuna={companyPlan.comuna}
+            />
+          </div>
+        )}
+
+        {companyPlan && (
+          <div className="mt-8">
+            <SiiSyncPanel
+              ultimaSincronizacion={ultimaSincronizacionSii}
+              totalDocumentos={totalDocumentosSii}
             />
           </div>
         )}
