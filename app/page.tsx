@@ -11,6 +11,9 @@ import {
   Download,
   Clock,
   FlaskConical,
+  RefreshCw,
+  ShieldCheck,
+  FileCheck2,
 } from "lucide-react";
 import RadarHero from "@/components/RadarHero";
 import Logo from "@/components/Logo";
@@ -333,6 +336,58 @@ export default function Home() {
                 fuerte esta semana, para que decidas si conviene adelantar tu
                 próxima compra. No predecimos la causa — solo reportamos el
                 movimiento del precio.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="font-display text-3xl font-semibold text-text-high">
+            Conecta tu cuenta del SII
+          </h2>
+          <p className="mt-4 max-w-2xl text-text-medium">
+            Sincroniza tus compras y ventas directo desde el Registro de
+            Compras y Ventas del SII, sin digitarlas a mano. Queda como
+            registro auditable en tu cuenta — un complemento a tu carga de
+            ventas históricas, no un reemplazo.
+          </p>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <RefreshCw size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Sin digitar nada a mano
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Elige un período y trae tus compras y ventas registradas en
+                el SII con un clic, en vez de copiar filas desde el portal.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <ShieldCheck size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Sin certificado digital
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Usas tu RUT y la misma clave con la que entras al portal del
+                SII — nada de trámites ni certificados adicionales.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <FileCheck2 size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Tus credenciales nunca se guardan
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Tu clave del SII viaja solo durante la sincronización — no
+                queda almacenada ni en base de datos ni en logs.
               </p>
             </div>
           </div>
