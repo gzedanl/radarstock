@@ -6,12 +6,17 @@ import "server-only";
 // (RUT + clave del portal SII) se reciben en cada request y se pasan
 // tal cual a API Gateway — nunca se guardan, ni siquiera en logs.
 //
-// Los endpoints de RCV ventas están confirmados contra la integración
-// de referencia. Los de RCV compras siguen la misma convención de
-// nombres (mismo proveedor, mismo estilo de API) pero no se pudieron
-// verificar contra la documentación real de API Gateway en este
-// entorno — hay que confirmarlos con una cuenta de prueba antes de
-// considerar esto listo para producción.
+// Los endpoints de RCV ventas y compras están confirmados contra la
+// documentación real de API Gateway. A diferencia de ventas, el RCV de
+// compras exige un {estado} en la URL (REGISTRO, PENDIENTE, NO_INCLUIR,
+// RECLAMADO) — por ahora solo sincronizamos REGISTRO (documentos
+// confirmados, con acuse de recibo o pagados al contado); los otros 3
+// estados quedan fuera de esta fase.
+//
+// Límite conocido: si el contribuyente tiene más de 1000 documentos en
+// el mes, API Gateway exige usar su API asíncrona (solicitar → estado
+// → detalle) en vez de este endpoint síncrono — no implementada en
+// esta fase, poco probable que aplique al volumen típico de una PyME.
 const APIGATEWAY_URL = "https://app.apigateway.cl/api/v2";
 const CALL_TIMEOUT_MS = 30_000;
 
@@ -173,31 +178,43 @@ function normalizarDocumento(
   };
 }
 
+// Estado de RCV compras que sincronizamos — ver nota al inicio del
+// archivo sobre por qué solo REGISTRO por ahora.
+const ESTADO_COMPRAS = "REGISTRO";
+
 // Trae el listado de documentos (a nivel de documento, sin detalle de
-// líneas) de un tipo y período. El endpoint de compras sigue la misma
-// convención de nombres que el de ventas (confirmado) pero no está
-// verificado contra la documentación real — ver nota al inicio del
+// líneas) de un tipo y período. Compras y ventas tienen distinta forma
+// de URL (compras exige {estado}, ventas no) — ver nota al inicio del
 // archivo.
 export async function fetchRcvDocumentos(
   credenciales: SiiCredenciales,
   tipo: SiiDocTipo,
   periodo: string
 ): Promise<SiiDocumentoNormalizado[]> {
-  const carpeta = tipo === "compra" ? "compras" : "ventas";
   const rut = rutForUrl(credenciales.rut);
   const periodoUrl = periodoForUrl(periodo);
   const body = authBody(credenciales.rut, credenciales.password);
 
+  const resumenPath =
+    tipo === "compra"
+      ? `/sii/rcv/compras/resumen/${rut}/${periodoUrl}/${ESTADO_COMPRAS}`
+      : `/sii/rcv/ventas/resumen/${rut}/${periodoUrl}`;
+
   const resumen = await callApiGateway<
     { tipoDte: string | number }[] | null
-  >(`/sii/rcv/${carpeta}/resumen/${rut}/${periodoUrl}`, body);
+  >(resumenPath, body);
 
   if (!resumen || resumen.length === 0) return [];
 
   const documentos: SiiDocumentoNormalizado[] = [];
   for (const item of resumen) {
+    const detallePath =
+      tipo === "compra"
+        ? `/sii/rcv/compras/detalle/${rut}/${periodoUrl}/${item.tipoDte}/${ESTADO_COMPRAS}`
+        : `/sii/rcv/ventas/detalle/${rut}/${periodoUrl}/${item.tipoDte}`;
+
     const detalle = await callApiGateway<SiiDocumentoRaw[] | null>(
-      `/sii/rcv/${carpeta}/detalle/${rut}/${periodoUrl}/${item.tipoDte}`,
+      detallePath,
       body
     );
     if (!detalle) continue;
