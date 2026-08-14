@@ -104,14 +104,19 @@ export async function POST(request: NextRequest) {
     // Se registra igual que un intento fallido — si no, las credenciales
     // incorrectas nunca contarían para el rate-limit y alguien podría
     // probar claves sin límite mientras sigan siendo inválidas.
-    await supabase.from("sii_sincronizaciones").insert({
-      company_id: company.id,
-      periodo,
-      estado: "error",
-      compras_sincronizadas: 0,
-      ventas_sincronizadas: 0,
-      mensaje_error: "Credenciales SII incorrectas.",
-    });
+    const { error: logError } = await supabase
+      .from("sii_sincronizaciones")
+      .insert({
+        company_id: company.id,
+        periodo,
+        estado: "error",
+        compras_sincronizadas: 0,
+        ventas_sincronizadas: 0,
+        mensaje_error: "Credenciales SII incorrectas.",
+      });
+    if (logError) {
+      console.error("Error registrando intento SII:", logError.message);
+    }
     return NextResponse.json(
       { error: "Credenciales SII incorrectas." },
       { status: 401 }
@@ -154,14 +159,19 @@ export async function POST(request: NextRequest) {
   const ventasSincronizadas =
     ventasResult.status === "fulfilled" ? ventasResult.value.length : 0;
 
-  await supabase.from("sii_sincronizaciones").insert({
-    company_id: company.id,
-    periodo,
-    estado: errores.length === 0 ? "ok" : "error",
-    compras_sincronizadas: comprasSincronizadas,
-    ventas_sincronizadas: ventasSincronizadas,
-    mensaje_error: errores.length > 0 ? errores.join(" ") : null,
-  });
+  const { error: logError } = await supabase
+    .from("sii_sincronizaciones")
+    .insert({
+      company_id: company.id,
+      periodo,
+      estado: errores.length === 0 ? "ok" : "error",
+      compras_sincronizadas: comprasSincronizadas,
+      ventas_sincronizadas: ventasSincronizadas,
+      mensaje_error: errores.length > 0 ? errores.join(" ") : null,
+    });
+  if (logError) {
+    console.error("Error registrando sincronización SII:", logError.message);
+  }
 
   return NextResponse.json({
     ok: errores.length === 0,

@@ -57,26 +57,36 @@ export async function POST(request: NextRequest) {
     // Se registra igual que una sincronización (0 documentos) para que
     // cuente en la misma ventana de rate-limit — si no, alguien podría
     // usar este endpoint sin límite para probar credenciales SII ajenas.
-    await supabase.from("sii_sincronizaciones").insert({
-      company_id: company.id,
-      periodo: new Date().toISOString().slice(0, 7),
-      estado: "ok",
-      compras_sincronizadas: 0,
-      ventas_sincronizadas: 0,
-    });
+    const { error: logError } = await supabase
+      .from("sii_sincronizaciones")
+      .insert({
+        company_id: company.id,
+        periodo: new Date().toISOString().slice(0, 7),
+        estado: "ok",
+        compras_sincronizadas: 0,
+        ventas_sincronizadas: 0,
+      });
+    if (logError) {
+      console.error("Error registrando intento SII:", logError.message);
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
-    await supabase.from("sii_sincronizaciones").insert({
-      company_id: company.id,
-      periodo: new Date().toISOString().slice(0, 7),
-      estado: "error",
-      compras_sincronizadas: 0,
-      ventas_sincronizadas: 0,
-      mensaje_error:
-        err instanceof SiiCredencialesInvalidasError
-          ? err.message
-          : "Error validando con el SII.",
-    });
+    const { error: logError } = await supabase
+      .from("sii_sincronizaciones")
+      .insert({
+        company_id: company.id,
+        periodo: new Date().toISOString().slice(0, 7),
+        estado: "error",
+        compras_sincronizadas: 0,
+        ventas_sincronizadas: 0,
+        mensaje_error:
+          err instanceof SiiCredencialesInvalidasError
+            ? err.message
+            : "Error validando con el SII.",
+      });
+    if (logError) {
+      console.error("Error registrando intento SII:", logError.message);
+    }
 
     if (err instanceof SiiCredencialesInvalidasError) {
       return NextResponse.json({ error: err.message }, { status: 401 });
