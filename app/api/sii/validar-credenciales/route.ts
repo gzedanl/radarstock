@@ -4,6 +4,8 @@ import {
   validarCredencialesSii,
   SiiCredencialesInvalidasError,
 } from "@/lib/sii";
+import { isTrialExpired } from "@/lib/trialStatus";
+import { siiRateLimitExceeded } from "@/lib/siiRateLimit";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -26,10 +28,66 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
 
+  const { data: company } = await supabase
+    .from("companies")
+    .select("id, plan, trial_ends_at")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!company) {
+    return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
+  }
+
+  if (isTrialExpired(company.plan, company.trial_ends_at)) {
+    return NextResponse.json(
+      { error: "Tu período de prueba terminó. Suscríbete a un plan para seguir usando RadarStock." },
+      { status: 402 }
+    );
+  }
+
+  if (await siiRateLimitExceeded(supabase, company.id)) {
+    return NextResponse.json(
+      { error: "Demasiados intentos. Espera unos minutos y vuelve a intentar." },
+      { status: 429 }
+    );
+  }
+
   try {
     await validarCredencialesSii({ rut, password });
+    // Se registra igual que una sincronización (0 documentos) para que
+    // cuente en la misma ventana de rate-limit — si no, alguien podría
+    // usar este endpoint sin límite para probar credenciales SII ajenas.
+    const { error: logError } = await supabase
+      .from("sii_sincronizaciones")
+      .insert({
+        company_id: company.id,
+        periodo: new Date().toISOString().slice(0, 7),
+        estado: "ok",
+        compras_sincronizadas: 0,
+        ventas_sincronizadas: 0,
+      });
+    if (logError) {
+      console.error("Error registrando intento SII:", logError.message);
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
+    const { error: logError } = await supabase
+      .from("sii_sincronizaciones")
+      .insert({
+        company_id: company.id,
+        periodo: new Date().toISOString().slice(0, 7),
+        estado: "error",
+        compras_sincronizadas: 0,
+        ventas_sincronizadas: 0,
+        mensaje_error:
+          err instanceof SiiCredencialesInvalidasError
+            ? err.message
+            : "Error validando con el SII.",
+      });
+    if (logError) {
+      console.error("Error registrando intento SII:", logError.message);
+    }
+
     if (err instanceof SiiCredencialesInvalidasError) {
       return NextResponse.json({ error: err.message }, { status: 401 });
     }

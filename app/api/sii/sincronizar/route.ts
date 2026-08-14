@@ -6,6 +6,8 @@ import {
   type SiiDocTipo,
   type SiiDocumentoNormalizado,
 } from "@/lib/sii";
+import { isTrialExpired } from "@/lib/trialStatus";
+import { siiRateLimitExceeded } from "@/lib/siiRateLimit";
 
 // Un período con muchos documentos implica varias llamadas
 // secuenciales a API Gateway (una por tipo de DTE) — igual que el
@@ -62,12 +64,26 @@ export async function POST(request: NextRequest) {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id")
+    .select("id, plan, trial_ends_at")
     .eq("user_id", user.id)
     .single();
 
   if (!company) {
     return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
+  }
+
+  if (isTrialExpired(company.plan, company.trial_ends_at)) {
+    return NextResponse.json(
+      { error: "Tu período de prueba terminó. Suscríbete a un plan para seguir usando RadarStock." },
+      { status: 402 }
+    );
+  }
+
+  if (await siiRateLimitExceeded(supabase, company.id)) {
+    return NextResponse.json(
+      { error: "Demasiados intentos de sincronización. Espera unos minutos y vuelve a intentar." },
+      { status: 429 }
+    );
   }
 
   const credenciales = { rut, password };
@@ -85,6 +101,22 @@ export async function POST(request: NextRequest) {
       ventasResult.reason instanceof SiiCredencialesInvalidasError);
 
   if (credencialesInvalidas) {
+    // Se registra igual que un intento fallido — si no, las credenciales
+    // incorrectas nunca contarían para el rate-limit y alguien podría
+    // probar claves sin límite mientras sigan siendo inválidas.
+    const { error: logError } = await supabase
+      .from("sii_sincronizaciones")
+      .insert({
+        company_id: company.id,
+        periodo,
+        estado: "error",
+        compras_sincronizadas: 0,
+        ventas_sincronizadas: 0,
+        mensaje_error: "Credenciales SII incorrectas.",
+      });
+    if (logError) {
+      console.error("Error registrando intento SII:", logError.message);
+    }
     return NextResponse.json(
       { error: "Credenciales SII incorrectas." },
       { status: 401 }
@@ -127,14 +159,19 @@ export async function POST(request: NextRequest) {
   const ventasSincronizadas =
     ventasResult.status === "fulfilled" ? ventasResult.value.length : 0;
 
-  await supabase.from("sii_sincronizaciones").insert({
-    company_id: company.id,
-    periodo,
-    estado: errores.length === 0 ? "ok" : "error",
-    compras_sincronizadas: comprasSincronizadas,
-    ventas_sincronizadas: ventasSincronizadas,
-    mensaje_error: errores.length > 0 ? errores.join(" ") : null,
-  });
+  const { error: logError } = await supabase
+    .from("sii_sincronizaciones")
+    .insert({
+      company_id: company.id,
+      periodo,
+      estado: errores.length === 0 ? "ok" : "error",
+      compras_sincronizadas: comprasSincronizadas,
+      ventas_sincronizadas: ventasSincronizadas,
+      mensaje_error: errores.length > 0 ? errores.join(" ") : null,
+    });
+  if (logError) {
+    console.error("Error registrando sincronización SII:", logError.message);
+  }
 
   return NextResponse.json({
     ok: errores.length === 0,

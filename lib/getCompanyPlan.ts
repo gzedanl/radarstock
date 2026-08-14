@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { PLANS, type Plan } from "@/lib/plans";
+import { isTrialExpired } from "@/lib/trialStatus";
 
 export interface CompanyPlanInfo {
   companyId: string;
@@ -38,17 +39,12 @@ export async function getCompanyPlan(): Promise<CompanyPlanInfo | null> {
 
   if (!company) return null;
 
-  const isTrialExpired =
-    company.plan === "trial" &&
-    !!company.trial_ends_at &&
-    new Date(company.trial_ends_at) < new Date();
-
   return {
     companyId: company.id,
     plan: company.plan,
     planStatus: company.plan_status,
     trialEndsAt: company.trial_ends_at,
-    isTrialExpired,
+    isTrialExpired: isTrialExpired(company.plan, company.trial_ends_at),
     limits: PLANS[company.plan as keyof typeof PLANS] ?? FALLBACK_LIMITS,
     diasAlertaAlto: company.dias_alerta_alto,
     diasAlertaMedio: company.dias_alerta_medio,

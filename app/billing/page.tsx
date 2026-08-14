@@ -1,7 +1,12 @@
 import { getCompanyPlan } from "@/lib/getCompanyPlan";
 import BillingPlans from "@/components/BillingPlans";
 
-export default async function BillingPage() {
+export default async function BillingPage(
+  props: {
+    searchParams: Promise<{ message?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const companyPlan = await getCompanyPlan();
 
   return (
@@ -13,6 +18,12 @@ export default async function BillingPage() {
         <p className="mt-1 text-text-medium">
           Elige el plan que mejor se ajuste a tu empresa.
         </p>
+
+        {searchParams.message && (
+          <p className="mt-6 rounded-md border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-amber">
+            {searchParams.message}
+          </p>
+        )}
 
         <BillingPlans
           currentPlan={companyPlan?.plan ?? null}
