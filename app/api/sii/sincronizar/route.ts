@@ -101,6 +101,17 @@ export async function POST(request: NextRequest) {
       ventasResult.reason instanceof SiiCredencialesInvalidasError);
 
   if (credencialesInvalidas) {
+    // Se registra igual que un intento fallido — si no, las credenciales
+    // incorrectas nunca contarían para el rate-limit y alguien podría
+    // probar claves sin límite mientras sigan siendo inválidas.
+    await supabase.from("sii_sincronizaciones").insert({
+      company_id: company.id,
+      periodo,
+      estado: "error",
+      compras_sincronizadas: 0,
+      ventas_sincronizadas: 0,
+      mensaje_error: "Credenciales SII incorrectas.",
+    });
     return NextResponse.json(
       { error: "Credenciales SII incorrectas." },
       { status: 401 }
