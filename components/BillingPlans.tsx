@@ -26,6 +26,19 @@ export default function BillingPlans({
     hasPreapproval && !!planStatus && planStatus !== "cancelled";
 
   async function handleSubscribe(planId: PlanId) {
+    if (hasActiveSubscription && currentPlan !== planId) {
+      const nombreActual = currentPlan
+        ? PLANS[currentPlan as PlanId]?.name ?? currentPlan
+        : "actual";
+      if (
+        !window.confirm(
+          `Vas a cancelar tu plan ${nombreActual} y suscribirte a ${PLANS[planId].name}. ¿Continuar?`
+        )
+      ) {
+        return;
+      }
+    }
+
     setError(null);
     setLoadingPlan(planId);
 
@@ -157,9 +170,9 @@ export default function BillingPlans({
 
       {hasActiveSubscription && (
         <p className="mt-4 text-sm text-text-medium">
-          Si cambias a otro plan sin cancelar el actual, vas a quedar con dos
-          suscripciones activas y cobros duplicados — cancela primero tu plan
-          actual si quieres cambiarte a otro.
+          Si te suscribes a otro plan, cancelamos automáticamente tu
+          suscripción actual antes de crear la nueva — no vas a quedar
+          pagando dos al mismo tiempo.
         </p>
       )}
 
