@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { AlertTriangle, Layers, Package } from "lucide-react";
 import PredictionChart from "@/components/PredictionChart";
 import ProductTable, { type Product, type RiskLevel } from "@/components/ProductTable";
@@ -36,6 +37,18 @@ function esDeHoy(isoDate: string): boolean {
 
 export default async function DashboardPage() {
   const companyPlan = await getCompanyPlan();
+
+  // Antes solo se mostraba un banner de advertencia y el dashboard
+  // seguía 100% funcional indefinidamente. Ahora, si el trial venció y
+  // la empresa nunca pasó a un plan pago, se corta el acceso acá — el
+  // mismo punto donde ya se corta por falta de sesión.
+  if (companyPlan?.isTrialExpired) {
+    redirect(
+      `/billing?message=${encodeURIComponent(
+        "Tu período de prueba terminó. Suscríbete a un plan para volver a acceder a tu dashboard."
+      )}`
+    );
+  }
 
   let products: Product[] = [];
   let chartData: ReturnType<typeof buildChartData> = [];

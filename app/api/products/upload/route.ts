@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { parseProductRows } from "@/lib/csvProducts";
 import { PLANS } from "@/lib/plans";
 import { refreshPredictionsForProducts } from "@/lib/refreshPredictions";
+import { isTrialExpired } from "@/lib/trialStatus";
 
 // Con un catálogo grande, esperar el recálculo de predicciones (Prophet
 // + LSTM por SKU, aunque limitado en concurrencia — ver
@@ -30,12 +31,19 @@ export async function POST(request: NextRequest) {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id, plan, rubro, comuna")
+    .select("id, plan, rubro, comuna, trial_ends_at")
     .eq("user_id", user.id)
     .single();
 
   if (!company) {
     return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
+  }
+
+  if (isTrialExpired(company.plan, company.trial_ends_at)) {
+    return NextResponse.json(
+      { error: "Tu período de prueba terminó. Suscríbete a un plan para seguir usando RadarStock." },
+      { status: 402 }
+    );
   }
 
   const parsedRows = parseProductRows(body.rows);
