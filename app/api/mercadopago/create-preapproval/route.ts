@@ -25,12 +25,46 @@ export async function POST(request: NextRequest) {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id")
+    .select("id, mp_preapproval_id, plan_status")
     .eq("user_id", user.id)
     .single();
 
   if (!company) {
     return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
+  }
+
+  // Si ya tiene una suscripción activa (o pausada), se cancela antes de
+  // crear la nueva — antes esto quedaba en manos del usuario ("cancela
+  // primero tu plan actual"), y si se le olvidaba terminaba pagando dos
+  // suscripciones en paralelo.
+  if (company.mp_preapproval_id && company.plan_status !== "cancelled") {
+    try {
+      await preApprovalClient.update({
+        id: company.mp_preapproval_id,
+        body: { status: "cancelled" },
+      });
+    } catch (err) {
+      console.error("Error cancelando la suscripción anterior:", err);
+      return NextResponse.json(
+        {
+          error:
+            "No se pudo cancelar tu suscripción anterior. Intenta de nuevo o cancélala manualmente antes de cambiar de plan.",
+        },
+        { status: 502 }
+      );
+    }
+
+    const { error: updateError } = await supabase
+      .from("companies")
+      .update({ plan_status: "cancelled" })
+      .eq("id", company.id);
+
+    if (updateError) {
+      console.error(
+        "Error actualizando plan_status tras cancelar la suscripción anterior:",
+        updateError.message
+      );
+    }
   }
 
   // Mercado Pago exige que back_url sea una URL pública HTTPS: no
