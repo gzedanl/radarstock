@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import LogoutButton from "@/components/LogoutButton";
+import { createClient } from "@/utils/supabase/server";
+import { isAdminEmail } from "@/lib/isAdmin";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -8,7 +10,13 @@ const NAV_LINKS = [
   { href: "/referidos", label: "Referidos" },
 ];
 
-export default function AppHeader() {
+export default async function AppHeader() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const showAdminLink = isAdminEmail(user?.email);
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-8">
@@ -23,6 +31,14 @@ export default function AppHeader() {
               {link.label}
             </Link>
           ))}
+          {showAdminLink && (
+            <Link
+              href="/admin"
+              className="text-sm text-text-medium transition hover:text-text-high"
+            >
+              Admin
+            </Link>
+          )}
         </nav>
       </div>
       <LogoutButton />
