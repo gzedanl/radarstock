@@ -3,12 +3,11 @@ import { AlertTriangle, Layers, Package } from "lucide-react";
 import PredictionChart from "@/components/PredictionChart";
 import ProductTable, { type Product, type RiskLevel } from "@/components/ProductTable";
 import CSVUploader from "@/components/CSVUploader";
-import LogoutButton from "@/components/LogoutButton";
 import PlanBanner from "@/components/PlanBanner";
 import RiskThresholdSettings from "@/components/RiskThresholdSettings";
 import CompanyProfileSettings from "@/components/CompanyProfileSettings";
 import SiiSyncPanel from "@/components/SiiSyncPanel";
-import Logo from "@/components/Logo";
+import AppHeader from "@/components/AppHeader";
 import { getCompanyPlan } from "@/lib/getCompanyPlan";
 import { createClient } from "@/utils/supabase/server";
 import { buildChartData } from "@/lib/buildChartData";
@@ -196,10 +195,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen px-6 py-10">
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between">
-          <Logo className="h-8 w-auto" />
-          <LogoutButton />
-        </div>
+        <AppHeader />
 
         <div className="mt-8 flex items-start justify-between">
           <div>

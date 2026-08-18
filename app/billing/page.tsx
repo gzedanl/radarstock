@@ -1,5 +1,6 @@
 import { getCompanyPlan } from "@/lib/getCompanyPlan";
 import BillingPlans from "@/components/BillingPlans";
+import AppHeader from "@/components/AppHeader";
 
 export default async function BillingPage(
   props: {
@@ -12,7 +13,9 @@ export default async function BillingPage(
   return (
     <main className="min-h-screen px-6 py-10">
       <div className="mx-auto max-w-6xl">
-        <h1 className="font-display text-3xl font-semibold text-text-high">
+        <AppHeader />
+
+        <h1 className="mt-8 font-display text-3xl font-semibold text-text-high">
           Planes
         </h1>
         <p className="mt-1 text-text-medium">

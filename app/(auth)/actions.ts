@@ -8,6 +8,7 @@ export async function signup(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const aceptaTerminos = formData.get("aceptaTerminos") === "on";
+  const referralCode = String(formData.get("referralCode") ?? "").trim();
 
   if (!aceptaTerminos) {
     redirect(
@@ -19,7 +20,14 @@ export async function signup(formData: FormData) {
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  // El trigger que crea la empresa (handle_new_user, ver
+  // supabase/migrations/0011_referidos.sql) lee este código desde
+  // raw_user_meta_data para resolver quién refirió a este usuario.
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: referralCode ? { data: { referral_code: referralCode } } : undefined,
+  });
 
   if (error) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);

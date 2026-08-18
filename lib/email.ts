@@ -187,6 +187,45 @@ export async function sendTrialEndingEmail(
   });
 }
 
+// Se dispara desde el webhook de Mercado Pago cuando un referido paga
+// su primer plan. El crédito no se aplica solo — Mercado Pago no
+// soporta descontar un monto puntual de una suscripción recurrente
+// sin tocar la preapproval — así que este email es lo que le avisa al
+// equipo comercial que hay un crédito de $30.000 pendiente de aplicar
+// a mano.
+export async function sendReferralRewardEmail(params: {
+  referrerEmail: string;
+  referrerCompanyName: string;
+  referredCompanyName: string;
+  amountClp: number;
+}): Promise<void> {
+  const html = emailShell(
+    "Nuevo premio de referido pendiente",
+    `
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px;">Empresa que refirió</td>
+          <td style="padding: 6px 12px; color: #E5E7EB;">${escapeHtml(params.referrerCompanyName)} (${escapeHtml(params.referrerEmail)})</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px;">Empresa referida (ya pagó su primer plan)</td>
+          <td style="padding: 6px 12px; color: #E5E7EB;">${escapeHtml(params.referredCompanyName)}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 12px; color: #94A3B8; font-size: 12px;">Crédito a aplicar</td>
+          <td style="padding: 6px 12px; color: #E5E7EB;">$${params.amountClp.toLocaleString("es-CL")} CLP</td>
+        </tr>
+      </table>
+    `
+  );
+
+  await sendEmailSafe({
+    to: SALES_EMAIL,
+    subject: `Referido pagó: aplicar $${params.amountClp.toLocaleString("es-CL")} a ${params.referrerCompanyName}`,
+    html,
+  });
+}
+
 export interface CorporateLead {
   empresa: string;
   email: string;
