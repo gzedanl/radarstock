@@ -92,6 +92,9 @@ export default async function AdminPage() {
                   Registrado el
                 </th>
                 <th className="whitespace-nowrap px-4 py-3 font-medium">
+                  Vence trial
+                </th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">
                   Referido por
                 </th>
               </tr>
@@ -113,6 +116,11 @@ export default async function AdminPage() {
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-text-medium">
                     {new Date(r.created_at).toLocaleDateString("es-CL")}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-text-medium">
+                    {r.plan === "trial" && r.trial_ends_at
+                      ? new Date(r.trial_ends_at).toLocaleDateString("es-CL")
+                      : "—"}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     {r.referidoPor ? (
