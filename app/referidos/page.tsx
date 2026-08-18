@@ -9,7 +9,9 @@ interface Referido {
   name: string;
   created_at: string;
   convertido: boolean;
-  recompensa_status: "pendiente" | "aplicado" | null;
+  recompensa_status: "pendiente" | "revision_pendiente" | "aplicado" | null;
+  recompensa_monto: number | null;
+  recompensa_monto_aplicado: number | null;
 }
 
 async function getMisReferidos(): Promise<Referido[]> {
@@ -36,10 +38,23 @@ export default async function ReferidosPage() {
   const referidos = await getMisReferidos();
 
   const convertidos = referidos.filter((r) => r.convertido);
-  const creditoTotal = convertidos.length * REFERRAL_REWARD_CLP;
-  const creditoPendiente = convertidos.filter(
-    (r) => r.recompensa_status === "pendiente"
-  ).length * REFERRAL_REWARD_CLP;
+  const creditoTotal = convertidos.reduce(
+    (sum, r) => sum + (r.recompensa_monto ?? REFERRAL_REWARD_CLP),
+    0
+  );
+  // Disponible para la próxima factura — solo premios ya confirmados
+  // (pendiente) y no consumidos todavía; el excedente de un mes anterior
+  // hace rollover automático acá porque se resta lo ya aplicado.
+  const creditoDisponible = referidos
+    .filter((r) => r.recompensa_status === "pendiente")
+    .reduce(
+      (sum, r) =>
+        sum + (r.recompensa_monto ?? 0) - (r.recompensa_monto_aplicado ?? 0),
+      0
+    );
+  const enValidacion = referidos.filter(
+    (r) => r.recompensa_status === "revision_pendiente"
+  ).length;
 
   const link = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://radarstock.vercel.app"}/signup?ref=${companyPlan.referralCode}`;
 
@@ -89,23 +104,37 @@ export default async function ReferidosPage() {
             </p>
             <p className="mt-1 text-sm text-text-medium">
               Crédito acumulado
-              {creditoPendiente > 0 && (
-                <> · ${creditoPendiente.toLocaleString("es-CL")} pendiente</>
+              {creditoDisponible > 0 && (
+                <>
+                  {" "}
+                  · ${creditoDisponible.toLocaleString("es-CL")} disponibles
+                  para tu próxima factura
+                </>
               )}
             </p>
           </div>
         </div>
 
-        {creditoPendiente > 0 && (
+        {creditoDisponible > 0 && (
           <p className="mt-4 rounded-md border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-text-high">
-            Tienes crédito pendiente de aplicar. Escríbenos a{" "}
+            Tienes ${creditoDisponible.toLocaleString("es-CL")} CLP en
+            crédito disponible. Se aplica hasta el 100% del monto de tu
+            próxima factura — si sobra, queda guardado para la siguiente.
+            Escríbenos a{" "}
             <a
               href={`mailto:${process.env.SALES_EMAIL ?? "comercial@radarstock.cl"}`}
               className="text-teal hover:underline"
             >
               {process.env.SALES_EMAIL ?? "comercial@radarstock.cl"}
             </a>{" "}
-            para coordinarlo.
+            si tienes dudas.
+          </p>
+        )}
+
+        {enValidacion > 0 && (
+          <p className="mt-4 rounded-md border border-border bg-panel px-4 py-3 text-sm text-text-medium">
+            Tienes {enValidacion} premio{enValidacion === 1 ? "" : "s"} en
+            validación — nuestro equipo lo confirma en breve.
           </p>
         )}
 
@@ -128,32 +157,38 @@ export default async function ReferidosPage() {
                 </tr>
               </thead>
               <tbody>
-                {referidos.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="py-3 text-text-high">{r.name}</td>
-                    <td className="py-3 text-text-medium">
-                      {new Date(r.created_at).toLocaleDateString("es-CL")}
-                    </td>
-                    <td className="py-3">
-                      {r.convertido ? (
-                        <span className="rounded-full bg-teal/10 px-2 py-1 text-xs text-teal">
-                          Convertido
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-panel px-2 py-1 text-xs text-text-medium">
-                          Registrado
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 text-text-medium">
-                      {r.recompensa_status === "aplicado"
-                        ? "Aplicado"
-                        : r.recompensa_status === "pendiente"
-                          ? "Pendiente"
-                          : "—"}
-                    </td>
-                  </tr>
-                ))}
+                {referidos.map((r) => {
+                  const disponible =
+                    (r.recompensa_monto ?? 0) - (r.recompensa_monto_aplicado ?? 0);
+                  return (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="py-3 text-text-high">{r.name}</td>
+                      <td className="py-3 text-text-medium">
+                        {new Date(r.created_at).toLocaleDateString("es-CL")}
+                      </td>
+                      <td className="py-3">
+                        {r.convertido ? (
+                          <span className="rounded-full bg-teal/10 px-2 py-1 text-xs text-teal">
+                            Convertido
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-panel px-2 py-1 text-xs text-text-medium">
+                            Registrado
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 text-text-medium">
+                        {r.recompensa_status === "aplicado"
+                          ? "Aplicado"
+                          : r.recompensa_status === "revision_pendiente"
+                            ? "En validación"
+                            : r.recompensa_status === "pendiente"
+                              ? `Pendiente ($${disponible.toLocaleString("es-CL")})`
+                              : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

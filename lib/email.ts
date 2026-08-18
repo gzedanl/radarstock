@@ -226,6 +226,60 @@ export async function sendReferralRewardEmail(params: {
   });
 }
 
+// Se dispara cuando un mismo referente acumula 3+ referidos convertidos
+// en 30 días — control mínimo contra empresas fantasma que se refieren
+// entre sí para farmear crédito. No bloquea el premio, solo lo deja en
+// revision_pendiente hasta que el equipo comercial confirme que son
+// negocios reales (no guardamos RUT en companies, así que solo se
+// puede listar nombre y email — para más detalle hay que contactar
+// directo al referente o buscar en el SII).
+export async function sendReferralReviewEmail(params: {
+  referrerCompanyName: string;
+  referrerEmail: string;
+  convertidosUltimos30Dias: number;
+  referidosRecientes: { name: string; email: string }[];
+}): Promise<void> {
+  const filas = params.referidosRecientes
+    .map(
+      (r) => `
+        <tr>
+          <td style="padding: 6px 12px; color: #E5E7EB;">${escapeHtml(r.name)}</td>
+          <td style="padding: 6px 12px; color: #94A3B8;">${escapeHtml(r.email)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const html = emailShell(
+    "Referido en revisión — posible abuso del programa",
+    `
+      <p style="color: #E5E7EB; line-height: 1.6;">
+        <strong>${escapeHtml(params.referrerCompanyName)}</strong>
+        (${escapeHtml(params.referrerEmail)}) acumuló
+        <strong>${params.convertidosUltimos30Dias}</strong> referidos
+        convertidos en los últimos 30 días. El premio nuevo quedó en
+        estado "revisión pendiente" — valida que sean negocios reales
+        antes de pasarlo a "pendiente" para que se pueda aplicar.
+      </p>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 6px 12px; color: #94A3B8; font-size: 12px;">Empresa referida</th>
+            <th style="text-align: left; padding: 6px 12px; color: #94A3B8; font-size: 12px;">Email</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+    `
+  );
+
+  await sendEmailSafe({
+    to: SALES_EMAIL,
+    subject: `Revisar referidos de ${params.referrerCompanyName} (${params.convertidosUltimos30Dias} en 30 días)`,
+    html,
+  });
+}
+
 export interface CorporateLead {
   empresa: string;
   email: string;
