@@ -2,7 +2,9 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { PLANS, getPlan } from "@/lib/plans";
-import { sendPlanActivatedEmail } from "@/lib/email";
+import { sendPlanActivatedEmail, sendReferralRewardEmail } from "@/lib/email";
+
+const REFERRAL_REWARD_CLP = 30000;
 
 // El SDK de crypto de Node requiere runtime nodejs (no edge).
 export const runtime = "nodejs";
@@ -125,7 +127,7 @@ export async function POST(request: NextRequest) {
 
   const { data: previousCompany } = await supabaseAdmin
     .from("companies")
-    .select("plan_status")
+    .select("plan_status, name, referred_by_company_id")
     .eq("id", companyId)
     .single();
 
@@ -151,6 +153,50 @@ export async function POST(request: NextRequest) {
       preapproval.payer_email,
       getPlan(planId)?.name ?? planId
     );
+  }
+
+  // Programa de referidos: si esta empresa fue referida y esta es la
+  // primera vez que activa un plan pago, se genera el premio. El
+  // unique en referred_company_id (0011) garantiza que reactivaciones
+  // posteriores (pausó y volvió a activar, etc.) no generen otro premio.
+  if (!error && justActivated && previousCompany?.referred_by_company_id) {
+    const { data: reward, error: rewardError } = await supabaseAdmin
+      .from("referral_rewards")
+      .insert({
+        referrer_company_id: previousCompany.referred_by_company_id,
+        referred_company_id: companyId,
+        amount_clp: REFERRAL_REWARD_CLP,
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (rewardError && rewardError.code !== "23505") {
+      // 23505 = violación de unique (referred_company_id ya tenía
+      // premio) — esperable en una reactivación, no es un error real.
+      console.error("Error creando premio de referido:", rewardError.message);
+    }
+
+    if (reward) {
+      const { data: referrerCompany } = await supabaseAdmin
+        .from("companies")
+        .select("name, user_id")
+        .eq("id", previousCompany.referred_by_company_id)
+        .single();
+
+      if (referrerCompany) {
+        const { data: referrerUser } =
+          await supabaseAdmin.auth.admin.getUserById(referrerCompany.user_id);
+
+        if (referrerUser?.user?.email) {
+          await sendReferralRewardEmail({
+            referrerEmail: referrerUser.user.email,
+            referrerCompanyName: referrerCompany.name,
+            referredCompanyName: previousCompany.name,
+            amountClp: REFERRAL_REWARD_CLP,
+          });
+        }
+      }
+    }
   }
 
   return NextResponse.json({ received: true });

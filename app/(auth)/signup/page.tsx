@@ -3,7 +3,7 @@ import { signup } from "../actions";
 
 export default async function SignupPage(
   props: {
-    searchParams: Promise<{ error?: string }>;
+    searchParams: Promise<{ error?: string; ref?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -41,6 +41,19 @@ export default async function SignupPage(
               required
               minLength={6}
               className="mt-1 w-full rounded-md border border-border bg-panel px-3 py-2 text-text-high outline-none focus:border-teal"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="referralCode" className="text-sm text-text-medium">
+              Código de referido (opcional)
+            </label>
+            <input
+              id="referralCode"
+              name="referralCode"
+              type="text"
+              defaultValue={searchParams.ref ?? ""}
+              className="mt-1 w-full rounded-md border border-border bg-panel px-3 py-2 uppercase text-text-high outline-none focus:border-teal"
             />
           </div>
 
