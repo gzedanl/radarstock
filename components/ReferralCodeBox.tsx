@@ -16,6 +16,8 @@ export default function ReferralCodeBox({ link }: { link: string }) {
     }
   }
 
+  const mensajeWhatsapp = `Te recomiendo RadarStock para predecir tu inventario y evitar quiebres de stock. Regístrate con mi link: ${link}`;
+
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
       <code className="rounded-md border border-border bg-panel px-3 py-2 text-sm text-text-high">
@@ -28,6 +30,14 @@ export default function ReferralCodeBox({ link }: { link: string }) {
       >
         {copiado ? "¡Copiado!" : "Copiar link"}
       </button>
+      <a
+        href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsapp)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="rounded-md bg-teal px-3 py-2 text-sm font-medium text-navy transition hover:opacity-90"
+      >
+        Compartir por WhatsApp
+      </a>
     </div>
   );
 }
