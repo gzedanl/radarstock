@@ -6,6 +6,7 @@ export type RiskLevel = "alto" | "medio" | "bajo";
 
 export interface Product {
   sku: string;
+  nombre?: string | null;
   stockActual: number;
   diasHastaQuiebre: number | null;
   cantidadSugerida: number;
@@ -18,6 +19,7 @@ export interface Product {
 const DEMO_PRODUCTS: Product[] = [
   {
     sku: "SKU-2091",
+    nombre: "Jamón Serrano 100g",
     stockActual: 34,
     diasHastaQuiebre: 3,
     cantidadSugerida: 120,
@@ -25,6 +27,7 @@ const DEMO_PRODUCTS: Product[] = [
   },
   {
     sku: "SKU-1187",
+    nombre: "Aceite de Oliva 500ml",
     stockActual: 210,
     diasHastaQuiebre: 12,
     cantidadSugerida: 60,
@@ -32,6 +35,7 @@ const DEMO_PRODUCTS: Product[] = [
   },
   {
     sku: "SKU-3320",
+    nombre: "Queso Gouda 200g",
     stockActual: 15,
     diasHastaQuiebre: 2,
     cantidadSugerida: 200,
@@ -39,6 +43,7 @@ const DEMO_PRODUCTS: Product[] = [
   },
   {
     sku: "SKU-0456",
+    nombre: "Membrillo 300g",
     stockActual: 340,
     diasHastaQuiebre: 28,
     cantidadSugerida: 0,
@@ -46,6 +51,7 @@ const DEMO_PRODUCTS: Product[] = [
   },
   {
     sku: "SKU-7742",
+    nombre: "Aceitunas Negras 250g",
     stockActual: 48,
     diasHastaQuiebre: 5,
     cantidadSugerida: 150,
@@ -59,14 +65,20 @@ const RISK_STYLES: Record<RiskLevel, string> = {
   bajo: "bg-text-medium/10 text-text-medium border border-text-medium/30",
 };
 
+// El nombre es texto libre (a diferencia del SKU) y puede traer comas
+// o comillas — sin esto rompería las columnas del CSV exportado.
+function csvField(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
 // Pre-Fase 4 (P1.2): CSV listo para mandar a un proveedor, con los SKUs
 // que de verdad necesitan reposición (riesgo alto o medio).
 function exportReposicion(products: Product[]) {
   const productosEnRiesgo = products.filter((p) => p.riesgo !== "bajo");
-  const header = "sku,stock_actual,cantidad_sugerida,dias_hasta_quiebre";
+  const header = "sku,nombre,stock_actual,cantidad_sugerida,dias_hasta_quiebre";
   const rows = productosEnRiesgo.map(
     (p) =>
-      `${p.sku},${p.stockActual},${p.cantidadSugerida},${p.diasHastaQuiebre ?? ""}`
+      `${p.sku},${csvField(p.nombre ?? "")},${p.stockActual},${p.cantidadSugerida},${p.diasHastaQuiebre ?? ""}`
   );
   const csv = [header, ...rows].join("\n");
 
@@ -108,7 +120,7 @@ export default function ProductTable({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-border text-text-medium">
-              <th className="px-4 py-3 font-medium">SKU</th>
+              <th className="px-4 py-3 font-medium">Producto</th>
               <th className="px-4 py-3 font-medium">Stock actual</th>
               <th className="px-4 py-3 font-medium">Días hasta quiebre</th>
               <th className="px-4 py-3 font-medium">Cantidad sugerida</th>
@@ -118,8 +130,8 @@ export default function ProductTable({
           <tbody>
             {products.map((product) => (
               <tr key={product.sku} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-mono text-text-high">
-                  {product.sku}
+                <td className="px-4 py-3 text-text-high" title={product.sku}>
+                  {product.nombre ?? product.sku}
                 </td>
                 <td className="px-4 py-3 font-mono text-text-high">
                   {product.stockActual}
