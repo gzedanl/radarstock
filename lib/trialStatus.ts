@@ -7,3 +7,12 @@ export function isTrialExpired(
 ): boolean {
   return plan === "trial" && !!trialEndsAt && new Date(trialEndsAt) < new Date();
 }
+
+// El SII cuesta créditos reales de API Gateway por consulta (a
+// diferencia de la carga de CSV, que no tiene costo marginal) — se
+// restringe a planes pagos desde el primer día, no solo cuando el
+// trial vence, para no exponerlo a que alguien abra una cuenta gratis
+// solo para consumir créditos sin pagar nunca.
+export function isTrialPlan(plan: string): boolean {
+  return plan === "trial";
+}

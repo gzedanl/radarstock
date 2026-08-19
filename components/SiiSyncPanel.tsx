@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface UltimaSincronizacion {
   periodo: string;
@@ -13,6 +14,10 @@ interface UltimaSincronizacion {
 interface SiiSyncPanelProps {
   ultimaSincronizacion: UltimaSincronizacion | null;
   totalDocumentos: number;
+  // El SII consume créditos reales de API Gateway por consulta, así
+  // que se restringe a planes pagos desde el primer día (no solo
+  // cuando el trial vence) — ver app/api/sii/*.
+  requierePlanPago?: boolean;
 }
 
 function periodoActual(): string {
@@ -27,6 +32,7 @@ function periodoActual(): string {
 export default function SiiSyncPanel({
   ultimaSincronizacion,
   totalDocumentos,
+  requierePlanPago = false,
 }: SiiSyncPanelProps) {
   const [rut, setRut] = useState("");
   const [password, setPassword] = useState("");
@@ -90,6 +96,15 @@ export default function SiiSyncPanel({
         </p>
       )}
 
+      {requierePlanPago ? (
+        <div className="mt-4 rounded-md border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-text-high">
+          Sincronizar con el SII está disponible desde el plan Starter.{" "}
+          <Link href="/billing" className="font-medium text-teal hover:underline">
+            Suscríbete
+          </Link>{" "}
+          para activarlo.
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
         {error && (
           <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-sm text-amber">
@@ -144,6 +159,7 @@ export default function SiiSyncPanel({
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }
