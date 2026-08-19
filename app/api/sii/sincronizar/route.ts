@@ -6,7 +6,7 @@ import {
   type SiiDocTipo,
   type SiiDocumentoNormalizado,
 } from "@/lib/sii";
-import { isTrialExpired } from "@/lib/trialStatus";
+import { isTrialPlan } from "@/lib/trialStatus";
 import { siiRateLimitExceeded } from "@/lib/siiRateLimit";
 
 // Un período con muchos documentos implica varias llamadas
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("id, plan, trial_ends_at")
+    .select("id, plan")
     .eq("user_id", user.id)
     .single();
 
@@ -72,9 +72,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
   }
 
-  if (isTrialExpired(company.plan, company.trial_ends_at)) {
+  if (isTrialPlan(company.plan)) {
     return NextResponse.json(
-      { error: "Tu período de prueba terminó. Suscríbete a un plan para seguir usando RadarStock." },
+      { error: "Sincronizar con el SII requiere un plan pago. Suscríbete para usar esta función." },
       { status: 402 }
     );
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTrialExpired } from "./trialStatus";
+import { isTrialExpired, isTrialPlan } from "./trialStatus";
 
 describe("isTrialExpired", () => {
   it("es false si el plan no es trial, sin importar la fecha", () => {
@@ -17,5 +17,17 @@ describe("isTrialExpired", () => {
   it("es false si es trial y trial_ends_at todavía no llega", () => {
     const enElFuturo = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     expect(isTrialExpired("trial", enElFuturo)).toBe(false);
+  });
+});
+
+describe("isTrialPlan", () => {
+  it("es true para plan trial, sin importar si venció o no", () => {
+    expect(isTrialPlan("trial")).toBe(true);
+  });
+
+  it("es false para cualquier plan pago", () => {
+    expect(isTrialPlan("starter")).toBe(false);
+    expect(isTrialPlan("growth")).toBe(false);
+    expect(isTrialPlan("enterprise")).toBe(false);
   });
 });

@@ -288,6 +288,7 @@ export default async function DashboardPage() {
             <SiiSyncPanel
               ultimaSincronizacion={ultimaSincronizacionSii}
               totalDocumentos={totalDocumentosSii}
+              requierePlanPago={companyPlan.plan === "trial"}
             />
           </div>
         )}
