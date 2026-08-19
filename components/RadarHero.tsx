@@ -5,18 +5,21 @@ import { useState } from "react";
 type RiskLevel = "alto" | "medio";
 
 interface Blip {
-  sku: string;
+  nombre: string;
   risk: RiskLevel;
   top: string;
   left: string;
 }
 
+// Mismos productos que components/ProductTable.tsx (DEMO_PRODUCTS), para
+// que la landing y el dashboard demo cuenten la misma historia — un
+// nombre de producto es más reconocible para una PYME que un SKU.
 const BLIPS: Blip[] = [
-  { sku: "SKU-2091", risk: "alto", top: "28%", left: "62%" },
-  { sku: "SKU-1187", risk: "medio", top: "68%", left: "40%" },
-  { sku: "SKU-3320", risk: "alto", top: "45%", left: "22%" },
-  { sku: "SKU-0456", risk: "medio", top: "20%", left: "35%" },
-  { sku: "SKU-7742", risk: "alto", top: "72%", left: "68%" },
+  { nombre: "Jamón Serrano 100g", risk: "alto", top: "28%", left: "62%" },
+  { nombre: "Aceite de Oliva 500ml", risk: "medio", top: "68%", left: "40%" },
+  { nombre: "Queso Gouda 200g", risk: "alto", top: "45%", left: "22%" },
+  { nombre: "Membrillo 300g", risk: "medio", top: "20%", left: "35%" },
+  { nombre: "Aceitunas Negras 250g", risk: "alto", top: "72%", left: "68%" },
 ];
 
 const RING_COUNT = 4;
@@ -53,10 +56,10 @@ export default function RadarHero() {
 
         {BLIPS.map((blip) => (
           <div
-            key={blip.sku}
+            key={blip.nombre}
             className="absolute -translate-x-1/2 -translate-y-1/2"
             style={{ top: blip.top, left: blip.left }}
-            onMouseEnter={() => setActiveBlip(blip.sku)}
+            onMouseEnter={() => setActiveBlip(blip.nombre)}
             onMouseLeave={() => setActiveBlip(null)}
           >
             <span
@@ -64,9 +67,9 @@ export default function RadarHero() {
                 blip.risk === "alto" ? "bg-amber" : "bg-teal"
               }`}
             />
-            {activeBlip === blip.sku && (
-              <div className="absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded border border-border bg-panel-raised px-2 py-1 font-mono text-xs text-text-high shadow-lg">
-                {blip.sku} · riesgo {blip.risk}
+            {activeBlip === blip.nombre && (
+              <div className="absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded border border-border bg-panel-raised px-2 py-1 text-xs text-text-high shadow-lg">
+                {blip.nombre} · riesgo {blip.risk}
               </div>
             )}
           </div>
