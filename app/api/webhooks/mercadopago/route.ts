@@ -2,9 +2,15 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { PLANS, getPlan } from "@/lib/plans";
-import { sendPlanActivatedEmail, sendReferralRewardEmail } from "@/lib/email";
+import {
+  sendPlanActivatedEmail,
+  sendReferralRewardEmail,
+  sendReferralReviewEmail,
+} from "@/lib/email";
+import { decideEstadoNuevoPremio } from "@/lib/referralCredit";
 
 const REFERRAL_REWARD_CLP = 30000;
+const VENTANA_REVISION_DIAS = 30;
 
 // El SDK de crypto de Node requiere runtime nodejs (no edge).
 export const runtime = "nodejs";
@@ -160,12 +166,32 @@ export async function POST(request: NextRequest) {
   // unique en referred_company_id (0011) garantiza que reactivaciones
   // posteriores (pausó y volvió a activar, etc.) no generen otro premio.
   if (!error && justActivated && previousCompany?.referred_by_company_id) {
+    const referrerCompanyId = previousCompany.referred_by_company_id;
+    const desdeVentanaRevision = new Date(
+      Date.now() - VENTANA_REVISION_DIAS * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    // Control de fraude: si el referente acumula 3+ convertidos en 30
+    // días, el premio nuevo queda en revisión manual en vez de
+    // aplicarse directo (no bloquea el premio, solo pausa su aplicación
+    // hasta que el equipo comercial confirme que son negocios reales).
+    const { data: recientesRewards } = await supabaseAdmin
+      .from("referral_rewards")
+      .select("referred_company_id")
+      .eq("referrer_company_id", referrerCompanyId)
+      .in("status", ["pendiente", "aplicado"])
+      .gte("created_at", desdeVentanaRevision);
+
+    const countRecientes = recientesRewards?.length ?? 0;
+    const estadoNuevoPremio = decideEstadoNuevoPremio(countRecientes);
+
     const { data: reward, error: rewardError } = await supabaseAdmin
       .from("referral_rewards")
       .insert({
-        referrer_company_id: previousCompany.referred_by_company_id,
+        referrer_company_id: referrerCompanyId,
         referred_company_id: companyId,
         amount_clp: REFERRAL_REWARD_CLP,
+        status: estadoNuevoPremio,
       })
       .select("id")
       .maybeSingle();
@@ -180,16 +206,42 @@ export async function POST(request: NextRequest) {
       const { data: referrerCompany } = await supabaseAdmin
         .from("companies")
         .select("name, user_id")
-        .eq("id", previousCompany.referred_by_company_id)
+        .eq("id", referrerCompanyId)
         .single();
 
       if (referrerCompany) {
         const { data: referrerUser } =
           await supabaseAdmin.auth.admin.getUserById(referrerCompany.user_id);
+        const referrerEmail = referrerUser?.user?.email;
 
-        if (referrerUser?.user?.email) {
+        if (referrerEmail && estadoNuevoPremio === "revision_pendiente") {
+          const idsRecientes = [
+            ...(recientesRewards ?? []).map((r) => r.referred_company_id),
+            companyId,
+          ];
+          const { data: companiasRecientes } = await supabaseAdmin
+            .from("companies")
+            .select("name, user_id")
+            .in("id", idsRecientes);
+
+          const referidosRecientes = await Promise.all(
+            (companiasRecientes ?? []).map(async (c) => {
+              const { data: u } = await supabaseAdmin.auth.admin.getUserById(
+                c.user_id
+              );
+              return { name: c.name, email: u?.user?.email ?? "—" };
+            })
+          );
+
+          await sendReferralReviewEmail({
+            referrerCompanyName: referrerCompany.name,
+            referrerEmail,
+            convertidosUltimos30Dias: countRecientes + 1,
+            referidosRecientes,
+          });
+        } else if (referrerEmail) {
           await sendReferralRewardEmail({
-            referrerEmail: referrerUser.user.email,
+            referrerEmail,
             referrerCompanyName: referrerCompany.name,
             referredCompanyName: previousCompany.name,
             amountClp: REFERRAL_REWARD_CLP,
