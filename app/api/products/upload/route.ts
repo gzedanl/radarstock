@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       rowsToSave.map((row) => ({
         company_id: company.id,
         sku: row.sku,
+        nombre: row.nombre,
         stock_actual: row.stock_actual,
         lead_time_dias: row.lead_time_dias,
         ventas_historicas: row.ventas_historicas,

@@ -126,7 +126,8 @@ export default function CSVUploader() {
         </span>
         <span className="text-xs text-text-medium">
           Formatos aceptados: .csv (columnas: sku, stock, y una columna por
-          fecha con las ventas de ese día)
+          fecha con las ventas de ese día — agrega una columna &quot;nombre&quot;
+          opcional para verlo con el nombre del producto, no solo el SKU)
         </span>
         <input
           type="file"

@@ -15,6 +15,7 @@ import { calcRiesgo, diasHastaQuiebreAjustado } from "@/lib/risk";
 
 interface ProductRow {
   sku: string;
+  nombre: string | null;
   stock_actual: number;
   lead_time_dias: number;
   ventas_historicas: { fecha: string; ventas: number }[];
@@ -65,7 +66,7 @@ export default async function DashboardPage() {
     const { data: rows } = await supabase
       .from("products")
       .select(
-        "sku, stock_actual, lead_time_dias, ventas_historicas, predictions(dias_hasta_quiebre, cantidad_sugerida, generated_at)"
+        "sku, nombre, stock_actual, lead_time_dias, ventas_historicas, predictions(dias_hasta_quiebre, cantidad_sugerida, generated_at)"
       )
       .eq("company_id", companyPlan.companyId)
       .order("sku")
@@ -107,6 +108,7 @@ export default async function DashboardPage() {
         );
         return {
           sku: row.sku,
+          nombre: row.nombre,
           stockActual: row.stock_actual,
           diasHastaQuiebre,
           cantidadSugerida: prediction?.cantidad_sugerida ?? 0,

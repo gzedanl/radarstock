@@ -1,11 +1,15 @@
 export interface ParsedProductRow {
   sku: string;
+  nombre: string | null;
   stock_actual: number;
   lead_time_dias: number;
   ventas_historicas: { fecha: string; ventas: number }[];
 }
 
 const SKU_KEYS = ["sku"];
+// Opcional — para una PYME es más fácil reconocer el nombre del
+// producto que el SKU. Si no viene, la UI cae al SKU (no acá).
+const NOMBRE_KEYS = ["nombre", "producto", "nombre_producto"];
 const STOCK_KEYS = ["stock", "stock_actual"];
 // Pre-Fase 4 (P2.2): columna opcional con los días que demora la
 // reposición de ese SKU (proveedor + logística). Si no viene, queda en 0
@@ -25,6 +29,7 @@ export function parseProductRows(
 
   for (const row of rows) {
     let sku: string | null = null;
+    let nombre: string | null = null;
     let stockActual = 0;
     let leadTimeDias = 0;
     const ventasHistoricas: { fecha: string; ventas: number }[] = [];
@@ -35,6 +40,10 @@ export function parseProductRows(
 
       if (SKU_KEYS.includes(key)) {
         sku = value;
+        continue;
+      }
+      if (NOMBRE_KEYS.includes(key)) {
+        nombre = value || null;
         continue;
       }
       if (STOCK_KEYS.includes(key)) {
@@ -55,6 +64,7 @@ export function parseProductRows(
 
     parsed.push({
       sku,
+      nombre,
       stock_actual: stockActual,
       lead_time_dias: leadTimeDias,
       ventas_historicas: ventasHistoricas,

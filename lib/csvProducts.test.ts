@@ -16,6 +16,7 @@ describe("parseProductRows", () => {
     expect(result).toEqual([
       {
         sku: "ACEITE-OLIVA-500ML",
+        nombre: null,
         stock_actual: 10,
         lead_time_dias: 5,
         ventas_historicas: [
@@ -24,6 +25,29 @@ describe("parseProductRows", () => {
         ],
       },
     ]);
+  });
+
+  it("parsea el nombre del producto si viene en el CSV (opcional)", () => {
+    const rows = [
+      { sku: "QUESO-GOUDA-200G", nombre: "Queso Gouda 200g", stock: "10" },
+    ];
+    const [row] = parseProductRows(rows);
+    expect(row.nombre).toBe("Queso Gouda 200g");
+  });
+
+  it("reconoce nombres de columna alternativos para el nombre (producto, nombre_producto)", () => {
+    expect(
+      parseProductRows([{ sku: "A", producto: "Producto A" }])[0].nombre
+    ).toBe("Producto A");
+    expect(
+      parseProductRows([{ sku: "B", nombre_producto: "Producto B" }])[0].nombre
+    ).toBe("Producto B");
+  });
+
+  it("nombre queda en null si no viene la columna", () => {
+    const rows = [{ sku: "SIN-NOMBRE", stock: "5" }];
+    const [row] = parseProductRows(rows);
+    expect(row.nombre).toBeNull();
   });
 
   it("descarta filas sin sku", () => {
