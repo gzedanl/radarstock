@@ -517,6 +517,9 @@ export default function Home() {
             para PYMEs chilenas.
           </p>
           <nav className="flex gap-6">
+            <Link href="/manual-usuario" className="transition hover:text-text-high">
+              Manual de usuario
+            </Link>
             <Link href="/privacidad" className="transition hover:text-text-high">
               Privacidad
             </Link>
