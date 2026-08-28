@@ -342,7 +342,7 @@ export default async function AdminPage(props: {
                           name="agenteWhatsapp"
                           defaultChecked={r.agente_whatsapp}
                         />
-                        WA
+                        Agente WA
                       </label>
                       <button
                         type="submit"
