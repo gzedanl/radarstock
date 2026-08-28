@@ -104,3 +104,33 @@ export async function aprobarPremioReferido(formData: FormData) {
   revalidatePath("/admin");
   redirect(`/admin?mensaje=${encodeURIComponent("Premio aprobado, ya puede aplicarse.")}`);
 }
+
+// Registra addons vendidos fuera del flujo automático de Mercado Pago
+// (ej. un cliente que pagó por transferencia) — no otorga acceso real
+// a usuarios adicionales ni al agente de WhatsApp, ambos pendientes de
+// construir; es solo el registro para control comercial.
+export async function actualizarAddonsCompania(formData: FormData) {
+  await requireAdmin();
+
+  const companyId = String(formData.get("companyId") ?? "");
+  const usuariosExtra = Number(formData.get("usuariosExtra") ?? 0);
+  const agenteWhatsapp = formData.get("agenteWhatsapp") === "on";
+
+  if (!companyId || !Number.isFinite(usuariosExtra) || usuariosExtra < 0) {
+    redirect(`/admin?error=${encodeURIComponent("Datos inválidos para actualizar addons.")}`);
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin
+    .from("companies")
+    .update({ usuarios_extra: usuariosExtra, agente_whatsapp: agenteWhatsapp })
+    .eq("id", companyId);
+
+  if (error) {
+    console.error("Error actualizando addons de la empresa:", error.message);
+    redirect(`/admin?error=${encodeURIComponent("No se pudo actualizar los addons.")}`);
+  }
+
+  revalidatePath("/admin");
+  redirect(`/admin?mensaje=${encodeURIComponent("Addons actualizados.")}`);
+}
