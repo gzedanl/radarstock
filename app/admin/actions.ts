@@ -6,6 +6,8 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { isAdminEmail } from "@/lib/isAdmin";
 import { applyCreditToInvoice, type CreditoDisponible } from "@/lib/referralCredit";
+import { getMonthlyChargeClp } from "@/lib/plans";
+import { preApprovalClient } from "@/lib/mercadopago";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -103,4 +105,103 @@ export async function aprobarPremioReferido(formData: FormData) {
 
   revalidatePath("/admin");
   redirect(`/admin?mensaje=${encodeURIComponent("Premio aprobado, ya puede aplicarse.")}`);
+}
+
+// Registra addons vendidos fuera del flujo automático de Mercado Pago
+// (ej. un cliente que pagó por transferencia) — no otorga acceso real
+// a usuarios adicionales ni al agente de WhatsApp, ambos pendientes de
+// construir; es solo el registro para control comercial.
+export async function actualizarAddonsCompania(formData: FormData) {
+  await requireAdmin();
+
+  const companyId = String(formData.get("companyId") ?? "");
+  const usuariosExtra = Number(formData.get("usuariosExtra") ?? 0);
+  const agenteWhatsapp = formData.get("agenteWhatsapp") === "on";
+
+  if (!companyId || !Number.isFinite(usuariosExtra) || usuariosExtra < 0) {
+    redirect(`/admin?error=${encodeURIComponent("Datos inválidos para actualizar addons.")}`);
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error } = await supabaseAdmin
+    .from("companies")
+    .update({ usuarios_extra: usuariosExtra, agente_whatsapp: agenteWhatsapp })
+    .eq("id", companyId);
+
+  if (error) {
+    console.error("Error actualizando addons de la empresa:", error.message);
+    redirect(`/admin?error=${encodeURIComponent("No se pudo actualizar los addons.")}`);
+  }
+
+  revalidatePath("/admin");
+  redirect(`/admin?mensaje=${encodeURIComponent("Addons actualizados.")}`);
+}
+
+// Paso explícito y separado de actualizarAddonsCompania: recién acá se
+// toca el cobro real. Recalcula el monto mensual (plan + addons
+// registrados) y lo empuja a la suscripción activa en Mercado Pago —
+// el admin ve el monto antes de confirmar (ver app/admin/page.tsx), no
+// se dispara solo al guardar los addons.
+export async function aplicarAddonsAMercadoPago(formData: FormData) {
+  await requireAdmin();
+
+  const companyId = String(formData.get("companyId") ?? "");
+  if (!companyId) {
+    redirect(`/admin?error=${encodeURIComponent("Falta el id de la empresa.")}`);
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { data: company } = await supabaseAdmin
+    .from("companies")
+    .select("plan, plan_status, mp_preapproval_id, usuarios_extra, agente_whatsapp")
+    .eq("id", companyId)
+    .single();
+
+  if (!company) {
+    redirect(`/admin?error=${encodeURIComponent("Empresa no encontrada.")}`);
+  }
+
+  if (!company.mp_preapproval_id || company.plan_status !== "active") {
+    redirect(
+      `/admin?error=${encodeURIComponent(
+        "Esta empresa no tiene una suscripción activa en Mercado Pago."
+      )}`
+    );
+  }
+
+  const nuevoMonto = getMonthlyChargeClp(
+    company.plan,
+    company.usuarios_extra,
+    company.agente_whatsapp
+  );
+
+  if (nuevoMonto === null) {
+    redirect(`/admin?error=${encodeURIComponent("Plan inválido, no se pudo calcular el monto.")}`);
+  }
+
+  try {
+    await preApprovalClient.update({
+      id: company.mp_preapproval_id,
+      body: {
+        auto_recurring: {
+          transaction_amount: nuevoMonto,
+          currency_id: "CLP",
+        },
+      },
+    });
+  } catch (err) {
+    console.error("Error actualizando el monto en Mercado Pago:", err);
+    redirect(
+      `/admin?error=${encodeURIComponent(
+        "No se pudo actualizar el monto en Mercado Pago."
+      )}`
+    );
+  }
+
+  revalidatePath("/admin");
+  redirect(
+    `/admin?mensaje=${encodeURIComponent(
+      `Suscripción actualizada a $${nuevoMonto.toLocaleString("es-CL")} CLP/mes.`
+    )}`
+  );
 }

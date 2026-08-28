@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { isAdminEmail } from "@/lib/isAdmin";
-import { PLANS } from "@/lib/plans";
+import { PLANS, getMonthlyChargeClp } from "@/lib/plans";
 import AppHeader from "@/components/AppHeader";
-import { aplicarCreditoReferido, aprobarPremioReferido } from "./actions";
+import {
+  aplicarCreditoReferido,
+  aprobarPremioReferido,
+  actualizarAddonsCompania,
+  aplicarAddonsAMercadoPago,
+} from "./actions";
 
 interface CompanyRow {
   id: string;
@@ -15,6 +20,9 @@ interface CompanyRow {
   trial_ends_at: string | null;
   referred_by_company_id: string | null;
   created_at: string;
+  usuarios_extra: number;
+  agente_whatsapp: boolean;
+  mp_preapproval_id: string | null;
 }
 
 interface RewardRow {
@@ -35,7 +43,7 @@ async function getAdminData() {
       supabaseAdmin
         .from("companies")
         .select(
-          "id, name, user_id, plan, plan_status, trial_ends_at, referred_by_company_id, created_at"
+          "id, name, user_id, plan, plan_status, trial_ends_at, referred_by_company_id, created_at, usuarios_extra, agente_whatsapp, mp_preapproval_id"
         )
         .order("created_at", { ascending: false })
         .returns<CompanyRow[]>(),
@@ -274,6 +282,9 @@ export default async function AdminPage(props: {
                 <th className="whitespace-nowrap px-4 py-3 font-medium">
                   Referido por
                 </th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">
+                  Addons
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -306,6 +317,69 @@ export default async function AdminPage(props: {
                       </span>
                     ) : (
                       <span className="text-text-medium">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <form
+                      action={actualizarAddonsCompania}
+                      className="flex items-center gap-2"
+                    >
+                      <input type="hidden" name="companyId" value={r.id} />
+                      <input
+                        type="number"
+                        name="usuariosExtra"
+                        min={0}
+                        defaultValue={r.usuarios_extra}
+                        className="w-16 rounded-md border border-border bg-panel px-2 py-1 text-sm text-text-high outline-none focus:border-teal"
+                        title="Usuarios extra comprados"
+                      />
+                      <label
+                        className="flex items-center gap-1 text-xs text-text-medium"
+                        title="Agente IA por WhatsApp"
+                      >
+                        <input
+                          type="checkbox"
+                          name="agenteWhatsapp"
+                          defaultChecked={r.agente_whatsapp}
+                        />
+                        WA
+                      </label>
+                      <button
+                        type="submit"
+                        className="rounded-md border border-border px-2 py-1 text-xs text-text-high transition hover:border-teal"
+                      >
+                        Guardar
+                      </button>
+                    </form>
+                    {(r.usuarios_extra > 0 || r.agente_whatsapp) && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="whitespace-nowrap text-xs text-text-medium">
+                          Con addons: $
+                          {(
+                            getMonthlyChargeClp(
+                              r.plan,
+                              r.usuarios_extra,
+                              r.agente_whatsapp
+                            ) ?? 0
+                          ).toLocaleString("es-CL")}
+                          /mes
+                        </span>
+                        {r.mp_preapproval_id && r.plan_status === "active" ? (
+                          <form action={aplicarAddonsAMercadoPago}>
+                            <input type="hidden" name="companyId" value={r.id} />
+                            <button
+                              type="submit"
+                              className="whitespace-nowrap rounded-md border border-teal/40 px-2 py-1 text-xs text-teal transition hover:bg-teal/10"
+                            >
+                              Aplicar a MP
+                            </button>
+                          </form>
+                        ) : (
+                          <span className="whitespace-nowrap text-xs text-text-medium">
+                            Sin suscripción MP activa
+                          </span>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
