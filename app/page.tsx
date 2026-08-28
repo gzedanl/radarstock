@@ -14,6 +14,9 @@ import {
   RefreshCw,
   ShieldCheck,
   FileCheck2,
+  Camera,
+  ScanBarcode,
+  Scale,
 } from "lucide-react";
 import RadarHero from "@/components/RadarHero";
 import Logo from "@/components/Logo";
@@ -388,6 +391,59 @@ export default function Home() {
               <p className="mt-2 text-text-medium">
                 Tu clave del SII viaja solo durante la sincronización — no
                 queda almacenada ni en base de datos ni en logs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border bg-panel py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="font-display text-3xl font-semibold text-text-high">
+            RadarStock Cam: cuenta tu inventario real con la cámara
+          </h2>
+          <p className="mt-4 max-w-2xl text-text-medium">
+            Tu stock en el sistema no siempre coincide con lo que realmente
+            hay en la bodega. Con RadarStock Cam escaneas los códigos de
+            barra con el celular o el notebook y comparamos ese conteo
+            contra tu stock registrado, sin comprar un lector aparte.
+          </p>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <Camera size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Sin hardware adicional
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Usa la cámara del celular o notebook que ya tienes — nada de
+                comprar un lector de código de barras dedicado.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <ScanBarcode size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Escaneo continuo por SKU
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Escanea producto por producto y ve el conteo sumarse en vivo,
+                asociando códigos nuevos a tu catálogo sobre la marcha.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-panel-raised p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy text-teal">
+                <Scale size={22} />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-text-high">
+                Detecta la merma al instante
+              </h3>
+              <p className="mt-2 text-text-medium">
+                Al cerrar el conteo ves la diferencia entre lo que el sistema
+                creía tener y lo que realmente hay, ordenado de mayor a menor
+                descuadre.
               </p>
             </div>
           </div>
