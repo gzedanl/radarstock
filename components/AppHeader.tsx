@@ -6,6 +6,7 @@ import { isAdminEmail } from "@/lib/isAdmin";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/auditoria", label: "RadarStock Cam" },
   { href: "/billing", label: "Planes" },
   { href: "/referidos", label: "Referidos" },
 ];
