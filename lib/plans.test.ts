@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { ADDONS, getPlan, getPriceConIva, getPriceMercadoPago, PLANS } from "./plans";
+import {
+  ADDONS,
+  getMonthlyChargeClp,
+  getPlan,
+  getPriceConIva,
+  getPriceMercadoPago,
+  getPriceMercadoPagoTotal,
+  PLANS,
+} from "./plans";
 
 describe("getPriceConIva", () => {
   it("agrega 19% de IVA y redondea al entero más cercano", () => {
@@ -28,6 +36,65 @@ describe("getPriceMercadoPago", () => {
 
   it("calcula el precio final del add-on Usuario extra", () => {
     expect(getPriceMercadoPago(ADDONS.extraUser)).toBe(12242);
+  });
+});
+
+describe("getPriceMercadoPagoTotal", () => {
+  it("suma los netos y aplica IVA + comisión una sola vez sobre el total", () => {
+    // Plan Starter (99990) + 1 usuario extra (9990) = 109980 neto.
+    expect(
+      getPriceMercadoPagoTotal([
+        { priceNetoClp: PLANS.starter.priceNetoClp },
+        { priceNetoClp: ADDONS.extraUser.priceNetoClp },
+      ])
+    ).toBe(getPriceMercadoPago({ priceNetoClp: 109980 }));
+  });
+
+  it("con un solo ítem da lo mismo que getPriceMercadoPago", () => {
+    expect(getPriceMercadoPagoTotal([PLANS.growth])).toBe(
+      getPriceMercadoPago(PLANS.growth)
+    );
+  });
+
+  it("con arreglo vacío da 0", () => {
+    expect(getPriceMercadoPagoTotal([])).toBe(0);
+  });
+});
+
+describe("getMonthlyChargeClp", () => {
+  it("es null si el plan no existe", () => {
+    expect(getMonthlyChargeClp("plan-inexistente", 0, false)).toBeNull();
+  });
+
+  it("sin addons, es igual al precio normal del plan", () => {
+    expect(getMonthlyChargeClp("starter", 0, false)).toBe(
+      getPriceMercadoPago(PLANS.starter)
+    );
+  });
+
+  it("suma usuarios extra al monto del plan", () => {
+    const esperado = getPriceMercadoPagoTotal([
+      { priceNetoClp: PLANS.starter.priceNetoClp },
+      { priceNetoClp: ADDONS.extraUser.priceNetoClp * 3 },
+    ]);
+    expect(getMonthlyChargeClp("starter", 3, false)).toBe(esperado);
+  });
+
+  it("suma el agente de WhatsApp al monto del plan", () => {
+    const esperado = getPriceMercadoPagoTotal([
+      { priceNetoClp: PLANS.growth.priceNetoClp },
+      { priceNetoClp: ADDONS.whatsappAgent.priceNetoClp },
+    ]);
+    expect(getMonthlyChargeClp("growth", 0, true)).toBe(esperado);
+  });
+
+  it("suma usuarios extra y agente de WhatsApp juntos", () => {
+    const esperado = getPriceMercadoPagoTotal([
+      { priceNetoClp: PLANS.enterprise.priceNetoClp },
+      { priceNetoClp: ADDONS.extraUser.priceNetoClp * 2 },
+      { priceNetoClp: ADDONS.whatsappAgent.priceNetoClp },
+    ]);
+    expect(getMonthlyChargeClp("enterprise", 2, true)).toBe(esperado);
   });
 });
 

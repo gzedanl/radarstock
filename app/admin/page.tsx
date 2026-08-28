@@ -2,12 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { isAdminEmail } from "@/lib/isAdmin";
-import { PLANS } from "@/lib/plans";
+import { PLANS, getMonthlyChargeClp } from "@/lib/plans";
 import AppHeader from "@/components/AppHeader";
 import {
   aplicarCreditoReferido,
   aprobarPremioReferido,
   actualizarAddonsCompania,
+  aplicarAddonsAMercadoPago,
 } from "./actions";
 
 interface CompanyRow {
@@ -21,6 +22,7 @@ interface CompanyRow {
   created_at: string;
   usuarios_extra: number;
   agente_whatsapp: boolean;
+  mp_preapproval_id: string | null;
 }
 
 interface RewardRow {
@@ -41,7 +43,7 @@ async function getAdminData() {
       supabaseAdmin
         .from("companies")
         .select(
-          "id, name, user_id, plan, plan_status, trial_ends_at, referred_by_company_id, created_at, usuarios_extra, agente_whatsapp"
+          "id, name, user_id, plan, plan_status, trial_ends_at, referred_by_company_id, created_at, usuarios_extra, agente_whatsapp, mp_preapproval_id"
         )
         .order("created_at", { ascending: false })
         .returns<CompanyRow[]>(),
@@ -349,6 +351,36 @@ export default async function AdminPage(props: {
                         Guardar
                       </button>
                     </form>
+                    {(r.usuarios_extra > 0 || r.agente_whatsapp) && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="whitespace-nowrap text-xs text-text-medium">
+                          Con addons: $
+                          {(
+                            getMonthlyChargeClp(
+                              r.plan,
+                              r.usuarios_extra,
+                              r.agente_whatsapp
+                            ) ?? 0
+                          ).toLocaleString("es-CL")}
+                          /mes
+                        </span>
+                        {r.mp_preapproval_id && r.plan_status === "active" ? (
+                          <form action={aplicarAddonsAMercadoPago}>
+                            <input type="hidden" name="companyId" value={r.id} />
+                            <button
+                              type="submit"
+                              className="whitespace-nowrap rounded-md border border-teal/40 px-2 py-1 text-xs text-teal transition hover:bg-teal/10"
+                            >
+                              Aplicar a MP
+                            </button>
+                          </form>
+                        ) : (
+                          <span className="whitespace-nowrap text-xs text-text-medium">
+                            Sin suscripción MP activa
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -104,3 +104,36 @@ export function getPriceMercadoPago(item: { priceNetoClp: number }): number {
   const comision = precioConIva * MP_FEE_RATE * (1 + IVA_RATE);
   return Math.round(precioConIva + comision);
 }
+
+// Igual que getPriceMercadoPago, pero para varios ítems cobrados en
+// una sola transacción (ej. plan + addons): suma los netos primero y
+// aplica IVA + comisión una sola vez sobre el total, como en un cobro
+// real — no ítem por ítem.
+export function getPriceMercadoPagoTotal(items: { priceNetoClp: number }[]): number {
+  const totalNeto = items.reduce((sum, item) => sum + item.priceNetoClp, 0);
+  return getPriceMercadoPago({ priceNetoClp: totalNeto });
+}
+
+// Monto mensual que debería cobrar la suscripción de Mercado Pago de
+// una empresa, sumando su plan base más los addons vendidos
+// manualmente (ver companies.usuarios_extra / agente_whatsapp) — usado
+// por el admin para saber a qué monto actualizar una suscripción ya
+// activa.
+export function getMonthlyChargeClp(
+  planId: string,
+  usuariosExtra: number,
+  agenteWhatsapp: boolean
+): number | null {
+  const plan = getPlan(planId);
+  if (!plan) return null;
+
+  const items = [{ priceNetoClp: plan.priceNetoClp }];
+  if (usuariosExtra > 0) {
+    items.push({ priceNetoClp: ADDONS.extraUser.priceNetoClp * usuariosExtra });
+  }
+  if (agenteWhatsapp) {
+    items.push({ priceNetoClp: ADDONS.whatsappAgent.priceNetoClp });
+  }
+
+  return getPriceMercadoPagoTotal(items);
+}
