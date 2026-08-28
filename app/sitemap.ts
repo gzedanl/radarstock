@@ -4,7 +4,8 @@ const SITE_URL = "https://www.radarstock.cl";
 
 // /dashboard y /billing están detrás de auth (ver robots.ts), y
 // /login /signup son formularios sin contenido propio que valga la pena
-// posicionar. /privacidad y /terminos sí son contenido público legal.
+// posicionar. /privacidad, /terminos y /manual-usuario sí son contenido
+// público que vale la pena indexar.
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
@@ -12,6 +13,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      url: `${SITE_URL}/manual-usuario`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
     {
       url: `${SITE_URL}/privacidad`,

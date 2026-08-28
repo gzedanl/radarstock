@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/auditoria", label: "RadarStock Cam" },
   { href: "/billing", label: "Planes" },
   { href: "/referidos", label: "Referidos" },
+  { href: "/manual-usuario", label: "Ayuda" },
 ];
 
 export default async function AppHeader() {
